@@ -3,6 +3,7 @@ import HeartRateMonitor from './components/HeartRateMonitor.tsx';
 import EntrainmentPlayer from './components/EntrainmentPlayer.tsx';
 import ProviderSetup from './components/ProviderSetup.tsx';
 import { generateSessionConfig } from './services/geminiService.ts';
+import { generateEncouragement } from './services/encouragementService.ts';
 import { useLiveGemini } from './hooks/useLiveGemini.ts';
 import { loadSetupState, resolveProviderConfig } from './services/providers.ts';
 import { AppState, BiometricData, EntrainmentConfig, GoalType, LogEntry, ProviderSetupState } from './types.ts';
@@ -32,7 +33,11 @@ export default function App() {
   
   const [calibrationStep, setCalibrationStep] = useState<string>(''); 
   const [calibrationRsa, setCalibrationRsa] = useState<number>(0);
-  
+
+  const [selfLoveEnabled, setSelfLoveEnabled] = useState<boolean>(false);
+  const [selfLoveTtsEnabled, setSelfLoveTtsEnabled] = useState<boolean>(false);
+  const [selfLoveLines, setSelfLoveLines] = useState<string[]>([]);
+
   const [systemLog, setSystemLog] = useState<LogEntry[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -55,6 +60,16 @@ export default function App() {
 
   const handleBiometricUpdate = useCallback((d: BiometricData) => {
     setBiometrics(d);
+  }, []);
+
+  const speak = useCallback((text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    utter.pitch = 1;
+    utter.volume = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
   }, []);
 
   const biometricsRef = useRef(biometrics);
@@ -135,7 +150,23 @@ export default function App() {
       }, 15000);
     }
     return () => clearInterval(interval);
-  }, [state, isLiveMode, isConnected, calibrationRsa]);
+  }, [state, isLiveMode, isConnected, calibrationRsa, providerConfig, addLog, sendText]);
+
+  // Self-love encouragement loop (text + optional TTS)
+  useEffect(() => {
+    let interval: any;
+    if (selfLoveEnabled && state === AppState.SESSION_ACTIVE) {
+      interval = setInterval(async () => {
+        const bio = biometricsRef.current;
+        const line = await generateEncouragement(bio.bpm || 70, goalRef.current, providerConfig);
+        setSelfLoveLines(prev => [...prev.slice(-9), line]);
+        if (selfLoveTtsEnabled) {
+          speak(line);
+        }
+      }, 20000);
+    }
+    return () => clearInterval(interval);
+  }, [selfLoveEnabled, selfLoveTtsEnabled, state, providerConfig, speak]);
 
   const handleStartCalibration = async () => {
     setState(AppState.CALIBRATING);
@@ -239,6 +270,23 @@ export default function App() {
                         ))}
                     </div>
 
+                    <div className="flex items-center justify-between bg-slate-900/70 border border-slate-800 rounded-xl p-4 mb-6">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold">Self-Love Mode</div>
+                        <p className="text-slate-500 text-[11px] mt-1">Closed-loop encouragement, optional TTS. Toggle only if desired.</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 text-xs text-slate-300">
+                          <input type="checkbox" checked={selfLoveEnabled} onChange={(e) => setSelfLoveEnabled(e.target.checked)} className="accent-pink-400" />
+                          Enable
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-slate-300">
+                          <input type="checkbox" checked={selfLoveTtsEnabled} onChange={(e) => setSelfLoveTtsEnabled(e.target.checked)} className="accent-pink-400" />
+                          TTS
+                        </label>
+                      </div>
+                    </div>
+
                     <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 mb-8">
                          <button onClick={() => setIsLiveMode(false)} className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-lg transition-all ${!isLiveMode ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-400'}`}>Standard</button>
                          <button onClick={() => setIsLiveMode(true)} className={`flex-1 py-3 text-[10px] uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${isLiveMode ? 'bg-cyan-900/30 text-cyan-400' : 'text-slate-500 hover:text-slate-400'}`}>
@@ -295,7 +343,7 @@ export default function App() {
         <div className="space-y-6 lg:col-span-3 order-3 flex flex-col h-full">
            <ProviderSetup state={setupState} onChange={handleSetupChange} />
 
-           <div className={`bg-slate-900/40 border ${isConnected ? 'border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.05)]' : 'border-slate-800'} rounded-2xl p-5 transition-all`}>
+           <div className={`bg-slate-900/40 border ${selfLoveEnabled ? 'border-pink-500/40 shadow-[0_0_25px_rgba(236,72,153,0.15)]' : isConnected ? 'border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.05)]' : 'border-slate-800'} rounded-2xl p-5 transition-all`}>
               <div className="flex justify-between items-center mb-6">
                   <h3 className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Neural Connector</h3>
                   <div className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase ${isConnected ? 'bg-cyan-500/10 text-cyan-400' : 'bg-slate-800 text-slate-600'}`}>
@@ -307,9 +355,34 @@ export default function App() {
               </div>
               <div className="flex items-center gap-3">
                    <div className="flex-grow h-0.5 bg-slate-800 rounded-full overflow-hidden">
-                       <div className="h-full bg-cyan-500 transition-all duration-75" style={{width: `${Math.min(100, micVolume * 20)}%`}}></div>
+                       <div className={`h-full ${selfLoveEnabled ? 'bg-pink-500' : 'bg-cyan-500'} transition-all duration-75`} style={{width: `${Math.min(100, micVolume * 20)}%`}}></div>
                    </div>
               </div>
+           </div>
+
+           <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 space-y-3">
+             <div className="flex items-center justify-between">
+               <div>
+                 <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Self-Love Coach</div>
+                 <p className="text-slate-500 text-[11px]">Closed-loop encouragement. Generates short guidance; optional TTS.</p>
+               </div>
+               <div className="flex items-center gap-3">
+                 <label className="flex items-center gap-2 text-xs text-slate-300">
+                   <input type="checkbox" className="accent-pink-400" checked={selfLoveEnabled} onChange={(e) => setSelfLoveEnabled(e.target.checked)} />
+                   Enable
+                 </label>
+                 <label className="flex items-center gap-2 text-xs text-slate-300">
+                   <input type="checkbox" className="accent-pink-400" checked={selfLoveTtsEnabled} onChange={(e) => setSelfLoveTtsEnabled(e.target.checked)} />
+                   TTS
+                 </label>
+               </div>
+             </div>
+             <div className="min-h-[80px] max-h-48 overflow-y-auto bg-black/40 border border-slate-800 rounded-xl p-3 text-sm space-y-2">
+               {selfLoveLines.slice(-5).map((line, idx) => (
+                 <div key={idx} className="text-pink-200/90 leading-snug">• {line}</div>
+               ))}
+               {selfLoveLines.length === 0 && <div className="text-slate-600 text-sm">Waiting for first encouragement…</div>}
+             </div>
            </div>
 
            <div className="flex-grow bg-black/40 rounded-2xl border border-slate-900 p-5 font-mono text-[9px] flex flex-col overflow-hidden min-h-[300px]">

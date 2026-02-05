@@ -1,0 +1,8 @@
+{
+  "name": "Cymatyx",
+  "description": "Closed-loop bio-resonance and neuro-adaptive entrainment system using rPPG.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

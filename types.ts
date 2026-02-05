@@ -9,7 +9,8 @@ export enum GoalType {
   RELAXATION = 'RELAXATION',
   FOCUS = 'FOCUS',
   ENERGY = 'ENERGY',
-  NEURO_REGEN = 'NEURO_REGEN' // 40Hz Gamma Alzheimer's Protocol
+  NEURO_REGEN = 'NEURO_REGEN', // 40Hz Gamma Alzheimer's Protocol
+  SELF_LOVE = 'SELF_LOVE'
 }
 
 export interface BiometricData {

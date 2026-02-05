@@ -7,6 +7,7 @@ Closed-loop bio-resonance app originally built with Gemini Live; now multi-provi
 - Enter API key → Fetch /v1/models → alphabetized dropdown → set default model
 - Gemini Live key field for the audio “Neural Connector”
 - Entrainment generation via selected provider (/chat/completions JSON)
+- “Self-Love” goal preset (theta-ish ~8.2 Hz, gentle carrier, pink palette)
 - Start/stop scripts: start.sh/stop.sh and start.bat/stop.bat
 
 ## Quickstart

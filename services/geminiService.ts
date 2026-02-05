@@ -56,6 +56,19 @@ export const generateSessionConfig = async (
   history: string[],
   providerCfg?: ProviderConfig | null
 ): Promise<EntrainmentConfig> => {
+  if (goal === GoalType.SELF_LOVE) {
+    return {
+      binauralBeatFreq: 8.2,
+      carrierFreq: 222,
+      visualPulseRate: 8.2,
+      primaryColor: '#ff66cc',
+      breathingRate: 6,
+      spatialPan: 0.3,
+      inductionText: 'Warmth rising, safe and centered. Breathe into your own gravity.',
+      explanation: 'Self-love protocol: mid-theta with gentle carrier and slow breathing.'
+    };
+  }
+
   if (!providerCfg?.apiKey || !providerCfg?.baseUrl || !providerCfg?.model) {
     return defaultConfig;
   }

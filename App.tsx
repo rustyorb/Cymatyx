@@ -232,7 +232,7 @@ export default function App() {
                     <p className="text-slate-500 text-xs mb-8 uppercase tracking-widest">Adjust system tuning parameters</p>
                     
                     <div className="grid grid-cols-1 gap-3 mb-8">
-                        {[GoalType.RELAXATION, GoalType.FOCUS, GoalType.ENERGY, GoalType.NEURO_REGEN].map((g) => (
+                        {[GoalType.RELAXATION, GoalType.FOCUS, GoalType.ENERGY, GoalType.NEURO_REGEN, GoalType.SELF_LOVE].map((g) => (
                             <button key={g} onClick={() => setGoal(g)} className={`px-6 py-4 rounded-xl text-xs font-bold transition-all uppercase tracking-[0.2em] border ${goal === g ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'bg-slate-900/50 text-slate-600 border-slate-800'}`}>
                                 {g.replace('_', ' ')}
                             </button>

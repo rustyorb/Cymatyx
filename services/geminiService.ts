@@ -1,4 +1,5 @@
 import { EntrainmentConfig, GoalType, ProviderConfig } from '../types.ts';
+import { generateOfflineConfig, shouldUseOfflineFallback } from './therapeuticFallback.ts';
 
 const defaultConfig: EntrainmentConfig = {
   binauralBeatFreq: 10,
@@ -69,8 +70,9 @@ export const generateSessionConfig = async (
     };
   }
 
-  if (!providerCfg?.apiKey || !providerCfg?.baseUrl || !providerCfg?.model) {
-    return defaultConfig;
+  if (shouldUseOfflineFallback(providerCfg)) {
+    console.log('[Cymatyx] No AI provider configured — using rule-based therapeutic fallback');
+    return generateOfflineConfig(goal, currentBpm, currentHrv);
   }
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -95,8 +97,8 @@ export const generateSessionConfig = async (
 
     if (!res.ok) {
       const text = await res.text();
-      console.warn('Model call failed', res.status, text);
-      return defaultConfig;
+      console.warn('Model call failed', res.status, text, '— falling back to offline therapeutic logic');
+      return generateOfflineConfig(goal, currentBpm, currentHrv);
     }
 
     const data = await res.json();
@@ -104,7 +106,7 @@ export const generateSessionConfig = async (
     const text = Array.isArray(content) ? content.map((c: any) => c.text || c).join('\n') : content;
     return parseJson(text || '{}');
   } catch (e) {
-    console.error('Model invocation error', e);
-    return defaultConfig;
+    console.error('Model invocation error', e, '— falling back to offline therapeutic logic');
+    return generateOfflineConfig(goal, currentBpm, currentHrv);
   }
 };

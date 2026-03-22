@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 
 console.group("System Boot: Cymatyx");
@@ -85,9 +86,11 @@ const mount = () => {
     const root = createRoot(rootElement);
     root.render(
       <React.StrictMode>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
+        <BrowserRouter>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </BrowserRouter>
       </React.StrictMode>
     );
     console.log("React Application Mounted Successfully.");

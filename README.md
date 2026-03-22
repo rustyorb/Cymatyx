@@ -22,12 +22,20 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - 3D visual entrainment via Three.js / React Three Fiber
 - Binaural beat audio synthesis with spatial panning
 
+### Offline Fallback
+- Rule-based therapeutic logic: HR zones map to binaural frequencies and visual params without AI
+- Automatic activation when no AI provider is available
+
 ## Architecture
+- **Routing**: React Router v7 — `Layout` (persistent header) + page-level routes
 - **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode), `useSettingsStore` (provider setup, self-love settings)
-- App.tsx consumes stores via hooks; no prop-drilling for shared state
+- **Orchestration**: `useSessionOrchestrator` hook — consolidates calibration, telemetry loops, Gemini connection, and canvas rendering
+- **Pages**: `pages/SessionPage.tsx` — main session flow (goal select → calibrate → active session → summary)
+- **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView) and panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog)
 
 ## Tech Stack
 - React 18 + TypeScript + Vite
+- React Router v7 (client-side routing)
 - Zustand (state management)
 - MediaPipe Tasks Vision (face tracking)
 - Three.js / @react-three/fiber + @react-three/drei (3D visuals)

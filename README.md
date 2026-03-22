@@ -22,8 +22,13 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - 3D visual entrainment via Three.js / React Three Fiber
 - Binaural beat audio synthesis with spatial panning
 
+## Architecture
+- **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode), `useSettingsStore` (provider setup, self-love settings)
+- App.tsx consumes stores via hooks; no prop-drilling for shared state
+
 ## Tech Stack
 - React 18 + TypeScript + Vite
+- Zustand (state management)
 - MediaPipe Tasks Vision (face tracking)
 - Three.js / @react-three/fiber + @react-three/drei (3D visuals)
 - Recharts (signal visualization)

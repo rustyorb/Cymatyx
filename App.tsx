@@ -1,66 +1,53 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useCallback, useRef, useMemo } from 'react';
 import HeartRateMonitor from './components/HeartRateMonitor.tsx';
 import EntrainmentPlayer from './components/EntrainmentPlayer.tsx';
 import ProviderSetup from './components/ProviderSetup.tsx';
 import { generateSessionConfig } from './services/geminiService.ts';
 import { generateEncouragement } from './services/encouragementService.ts';
 import { useLiveGemini } from './hooks/useLiveGemini.ts';
-import { loadSetupState, resolveProviderConfig } from './services/providers.ts';
-import { AppState, BiometricData, EntrainmentConfig, GoalType, LogEntry, ProviderSetupState } from './types.ts';
-
-const DEFAULT_CONFIG: EntrainmentConfig = {
-  binauralBeatFreq: 10,
-  carrierFreq: 200,
-  visualPulseRate: 10,
-  primaryColor: '#6366f1',
-  breathingRate: 5,
-  spatialPan: 0,
-  inductionText: "Welcome to Cymatyx.",
-  explanation: 'Initializing bio-resonance sequence...'
-};
+import { resolveProviderConfig } from './services/providers.ts';
+import { AppState, BiometricData, GoalType } from './types.ts';
+import { useSessionStore } from './stores/useSessionStore.ts';
+import { useAudioStore } from './stores/useAudioStore.ts';
+import { useSettingsStore } from './stores/useSettingsStore.ts';
 
 export default function App() {
-  const [state, setState] = useState<AppState>(AppState.IDLE);
-  const [goal, setGoal] = useState<GoalType>(GoalType.RELAXATION);
-  const [biometrics, setBiometrics] = useState<BiometricData>({ bpm: 0, hrv: 0, signalQuality: 0, timestamp: 0 });
-  const [config, setConfig] = useState<EntrainmentConfig>(DEFAULT_CONFIG);
-  const [sessionHistory, setSessionHistory] = useState<string[]>([]);
-  const [volume, setVolume] = useState(0.5);
-  const [isLiveMode, setIsLiveMode] = useState(true);
-  
-  const [setupState, setSetupState] = useState<ProviderSetupState>(() => loadSetupState());
+  // --- Zustand stores ---
+  const {
+    state, goal, biometrics, calibrationStep, calibrationRsa, systemLog,
+    setAppState, setGoal, setBiometrics, setCalibrationStep, setCalibrationRsa, addLog
+  } = useSessionStore();
+
+  const {
+    config, volume, isLiveMode,
+    setConfig, mergeConfig, setVolume, setIsLiveMode
+  } = useAudioStore();
+
+  const {
+    setupState, selfLoveEnabled, selfLoveTtsEnabled, selfLoveLines,
+    setSetupState, setSelfLoveEnabled, setSelfLoveTtsEnabled, addSelfLoveLine
+  } = useSettingsStore();
+
+  // --- Derived ---
   const providerConfig = useMemo(() => resolveProviderConfig(setupState), [setupState]);
-  
-  const [calibrationStep, setCalibrationStep] = useState<string>(''); 
-  const [calibrationRsa, setCalibrationRsa] = useState<number>(0);
 
-  const [selfLoveEnabled, setSelfLoveEnabled] = useState<boolean>(false);
-  const [selfLoveTtsEnabled, setSelfLoveTtsEnabled] = useState<boolean>(false);
-  const [selfLoveLines, setSelfLoveLines] = useState<string[]>([]);
-
-  const [systemLog, setSystemLog] = useState<LogEntry[]>([]);
+  // --- Refs ---
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const biometricsRef = useRef(biometrics);
+  const goalRef = useRef(goal);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const addLog = useCallback((source: 'SYSTEM' | 'BIO' | 'AI' | 'ERROR', message: string) => {
-      setSystemLog(prev => [...prev.slice(-49), {
-          id: Math.random().toString(36),
-          timestamp: new Date().toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'}),
-          source,
-          message
-      }]);
-  }, []);
-
-  const handleSetupChange = useCallback((next: ProviderSetupState) => {
-    setSetupState(next);
-  }, []);
+  useEffect(() => { biometricsRef.current = biometrics; }, [biometrics]);
+  useEffect(() => { goalRef.current = goal; }, [goal]);
 
   useEffect(() => {
-      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [systemLog]);
 
+  // --- Callbacks ---
   const handleBiometricUpdate = useCallback((d: BiometricData) => {
     setBiometrics(d);
-  }, []);
+  }, [setBiometrics]);
 
   const speak = useCallback((text: string) => {
     if (!('speechSynthesis' in window)) return;
@@ -72,12 +59,7 @@ export default function App() {
     window.speechSynthesis.speak(utter);
   }, []);
 
-  const biometricsRef = useRef(biometrics);
-  const goalRef = useRef(goal);
-
-  useEffect(() => { biometricsRef.current = biometrics; }, [biometrics]);
-  useEffect(() => { goalRef.current = goal; }, [goal]);
-
+  // --- Live Gemini ---
   const { 
     connect: connectLive, 
     disconnect: disconnectLive, 
@@ -91,8 +73,7 @@ export default function App() {
       onLog: addLog,
       onToolCall: async (name, args) => {
           if (name === 'updateEntrainment') {
-              const newConfig = { ...config, ...args };
-              setConfig(newConfig);
+              mergeConfig(args);
               addLog('AI', `System Update: Beat ${args.binauralBeatFreq}Hz / Carrier ${args.carrierFreq}Hz`);
               return "Entrainment parameters updated.";
           }
@@ -100,7 +81,7 @@ export default function App() {
       }
   });
   
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // --- Audio waveform canvas ---
   useEffect(() => {
       let animId: number;
       const draw = () => {
@@ -133,6 +114,7 @@ export default function App() {
       return () => cancelAnimationFrame(animId);
   }, [isConnected, getOutputData]);
 
+  // --- Biometric telemetry loop ---
   useEffect(() => {
     let interval: any;
     if (state === AppState.SESSION_ACTIVE) {
@@ -150,26 +132,27 @@ export default function App() {
       }, 15000);
     }
     return () => clearInterval(interval);
-  }, [state, isLiveMode, isConnected, calibrationRsa, providerConfig, addLog, sendText]);
+  }, [state, isLiveMode, isConnected, calibrationRsa, providerConfig, addLog, sendText, setConfig]);
 
-  // Self-love encouragement loop (text + optional TTS)
+  // --- Self-love encouragement loop ---
   useEffect(() => {
     let interval: any;
     if (selfLoveEnabled && state === AppState.SESSION_ACTIVE) {
       interval = setInterval(async () => {
         const bio = biometricsRef.current;
         const line = await generateEncouragement(bio.bpm || 70, goalRef.current, providerConfig);
-        setSelfLoveLines(prev => [...prev.slice(-9), line]);
+        addSelfLoveLine(line);
         if (selfLoveTtsEnabled) {
           speak(line);
         }
       }, 20000);
     }
     return () => clearInterval(interval);
-  }, [selfLoveEnabled, selfLoveTtsEnabled, state, providerConfig, speak]);
+  }, [selfLoveEnabled, selfLoveTtsEnabled, state, providerConfig, speak, addSelfLoveLine]);
 
+  // --- Calibration handler ---
   const handleStartCalibration = async () => {
-    setState(AppState.CALIBRATING);
+    setAppState(AppState.CALIBRATING);
     addLog('SYSTEM', 'Initiating Vagal Tone Calibration...');
     
     setCalibrationStep('IN');
@@ -202,12 +185,13 @@ export default function App() {
                 
                 const initialConfig = await generateSessionConfig(goal, biometricsRef.current.bpm || 75, 50, [], providerConfig);
                 setConfig(initialConfig);
-                setState(AppState.SESSION_ACTIVE);
+                setAppState(AppState.SESSION_ACTIVE);
             }, 5000);
         }, 5000);
     }, 5000);
   };
 
+  // --- Render ---
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans selection:bg-cyan-500/30">
       <header className="px-6 py-4 border-b border-slate-900 flex justify-between items-center bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
@@ -226,7 +210,7 @@ export default function App() {
         </div>
         <div className="flex items-center gap-4">
            {state === AppState.SESSION_ACTIVE && (
-             <button onClick={() => { setState(AppState.SUMMARY); disconnectLive(); }} className="px-4 py-1.5 rounded-full border border-red-500/30 text-red-400 text-[10px] uppercase tracking-[0.2em] hover:bg-red-500/10 transition-colors">
+             <button onClick={() => { setAppState(AppState.SUMMARY); disconnectLive(); }} className="px-4 py-1.5 rounded-full border border-red-500/30 text-red-400 text-[10px] uppercase tracking-[0.2em] hover:bg-red-500/10 transition-colors">
                 Terminate
              </button>
            )}
@@ -335,13 +319,13 @@ export default function App() {
              <div className="h-full bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-800 flex flex-col items-center justify-center text-center">
                  <h2 className="text-2xl text-white font-bold mb-4 tracking-tighter">Session Optimization Complete</h2>
                  <p className="text-slate-500 text-sm mb-10 max-w-xs">Baseline Vagal Tone of {Math.round(calibrationRsa)}Hz maintained across resonance cycle.</p>
-                 <button onClick={() => setState(AppState.IDLE)} className="px-10 py-4 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-500 transition-colors tracking-widest text-xs">DISMISS</button>
+                 <button onClick={() => setAppState(AppState.IDLE)} className="px-10 py-4 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-500 transition-colors tracking-widest text-xs">DISMISS</button>
              </div>
           )}
         </div>
 
         <div className="space-y-6 lg:col-span-3 order-3 flex flex-col h-full">
-           <ProviderSetup state={setupState} onChange={handleSetupChange} />
+           <ProviderSetup state={setupState} onChange={setSetupState} />
 
            <div className={`bg-slate-900/40 border ${selfLoveEnabled ? 'border-pink-500/40 shadow-[0_0_25px_rgba(236,72,153,0.15)]' : isConnected ? 'border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.05)]' : 'border-slate-800'} rounded-2xl p-5 transition-all`}>
               <div className="flex justify-between items-center mb-6">

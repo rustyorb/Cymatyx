@@ -12,6 +12,8 @@ export class HeartbeatEngine {
   private signal: number[] = [];
   private timestamps: number[] = [];
   private windowSize = 120; // ~4 seconds at 30fps
+  private rrIntervals: number[] = []; // R-R intervals in ms
+  private maxRRHistory = 30; // Keep last 30 R-R intervals for HRV
 
   // 1. Moving Average Smoothing
   private movingAverage(data: number[], window: number): number[] {
@@ -38,7 +40,64 @@ export class HeartbeatEngine {
     return data.map(v => (v - mean) / (std || 1));
   }
 
-  // 4. Power Spectrum Analysis (DFT)
+  // 4. Peak Detection — find R-peaks in the processed signal
+  private detectPeaks(data: number[], timestamps: number[]): number[] {
+    const peaks: number[] = [];
+    const minDistance = 10; // Min ~0.33s between beats at 30fps (180bpm max)
+
+    for (let i = 2; i < data.length - 2; i++) {
+      // Local maximum: higher than 2 neighbors on each side
+      if (
+        data[i] > data[i - 1] &&
+        data[i] > data[i - 2] &&
+        data[i] > data[i + 1] &&
+        data[i] > data[i + 2] &&
+        data[i] > 0.3 // Above threshold (standardized signal)
+      ) {
+        // Enforce minimum distance from last peak
+        if (peaks.length === 0 || (i - peaks[peaks.length - 1]) >= minDistance) {
+          peaks.push(i);
+        }
+      }
+    }
+    return peaks;
+  }
+
+  // 5. Compute RMSSD from R-R intervals (gold-standard short-term HRV metric)
+  private computeRMSSD(peakIndices: number[], timestamps: number[]): number {
+    if (peakIndices.length < 3) return 0;
+
+    // Extract R-R intervals in ms from actual timestamps
+    const newRRIntervals: number[] = [];
+    for (let i = 1; i < peakIndices.length; i++) {
+      const rr = timestamps[peakIndices[i]] - timestamps[peakIndices[i - 1]];
+      // Filter physiologically plausible R-R intervals (333ms-1500ms = 40-180 BPM)
+      if (rr >= 333 && rr <= 1500) {
+        newRRIntervals.push(rr);
+      }
+    }
+
+    // Append to rolling history
+    this.rrIntervals.push(...newRRIntervals);
+    if (this.rrIntervals.length > this.maxRRHistory) {
+      this.rrIntervals = this.rrIntervals.slice(-this.maxRRHistory);
+    }
+
+    if (this.rrIntervals.length < 3) return 0;
+
+    // RMSSD: Root Mean Square of Successive Differences
+    let sumSquaredDiffs = 0;
+    let count = 0;
+    for (let i = 1; i < this.rrIntervals.length; i++) {
+      const diff = this.rrIntervals[i] - this.rrIntervals[i - 1];
+      sumSquaredDiffs += diff * diff;
+      count++;
+    }
+
+    return count > 0 ? Math.sqrt(sumSquaredDiffs / count) : 0;
+  }
+
+  // 6. Power Spectrum Analysis (DFT)
   private calculateSpectrum(data: number[], fps: number): SpectrumPoint[] {
     const spectrum: SpectrumPoint[] = [];
     const minBpm = 45;
@@ -59,7 +118,7 @@ export class HeartbeatEngine {
     return spectrum;
   }
 
-  public process(greenValue: number, fps: number): { bpm: number; confidence: number; spectrum: SpectrumPoint[]; signal: number[] } {
+  public process(greenValue: number, fps: number): { bpm: number; hrv: number; confidence: number; spectrum: SpectrumPoint[]; signal: number[] } {
     this.signal.push(greenValue);
     this.timestamps.push(Date.now());
 
@@ -69,7 +128,7 @@ export class HeartbeatEngine {
     }
 
     if (this.signal.length < 60) {
-      return { bpm: 0, confidence: 0, spectrum: [], signal: [...this.signal] };
+      return { bpm: 0, hrv: 0, confidence: 0, spectrum: [], signal: [...this.signal] };
     }
 
     // Pipeline
@@ -93,8 +152,13 @@ export class HeartbeatEngine {
     const avgPower = spectrum.reduce((a, b) => a + b.power, 0) / spectrum.length;
     const confidence = Math.min(1, maxPower / (avgPower * 4 || 1));
 
+    // Detect R-peaks and compute real RMSSD-based HRV
+    const peakIndices = this.detectPeaks(processed, this.timestamps);
+    const hrv = this.computeRMSSD(peakIndices, this.timestamps);
+
     return {
       bpm: peakBpm,
+      hrv: Math.round(hrv * 10) / 10, // Round to 1 decimal place
       confidence,
       spectrum,
       signal: processed

@@ -14,6 +14,7 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [bpm, setBpm] = useState(0);
+  const [hrv, setHrv] = useState(0);
   const [confidence, setConfidence] = useState(0);
   const [spectrum, setSpectrum] = useState<SpectrumPoint[]>([]);
   const [signal, setSignal] = useState<number[]>([]);
@@ -76,6 +77,7 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
 
           const res = engineRef.current.process(avgG, 30);
           setBpm(res.bpm);
+          setHrv(res.hrv);
           setConfidence(res.confidence);
           setSpectrum(res.spectrum);
           setSignal(res.signal);
@@ -83,7 +85,7 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
           if (res.bpm > 0 && res.confidence > 0.4) {
             onBiometricUpdate({
               bpm: res.bpm,
-              hrv: 50,
+              hrv: res.hrv, // Real RMSSD from R-R interval analysis
               signalQuality: res.confidence,
               timestamp: Date.now()
             });
@@ -120,6 +122,10 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
         <div className="absolute top-2 left-3 flex flex-col">
             <span className="text-2xl font-black text-white tabular-nums">{bpm ? Math.round(bpm) : '--'}</span>
             <span className="text-[8px] text-slate-500 uppercase tracking-widest -mt-1">BPM</span>
+        </div>
+        <div className="absolute bottom-2 left-3 flex flex-col">
+            <span className="text-lg font-bold text-violet-400 tabular-nums">{hrv > 0 ? hrv.toFixed(1) : '--'}</span>
+            <span className="text-[8px] text-slate-500 uppercase tracking-widest -mt-1">HRV (RMSSD)</span>
         </div>
         <div className="absolute top-2 right-3 flex flex-col items-end">
             <span className={`text-[10px] font-bold ${confidence > 0.5 ? 'text-emerald-400' : 'text-amber-500'}`}>

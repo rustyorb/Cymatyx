@@ -7,6 +7,7 @@ import { AppState, BiometricData } from '../types.ts';
 import { useSessionStore } from '../stores/useSessionStore.ts';
 import { useAudioStore } from '../stores/useAudioStore.ts';
 import { useSettingsStore } from '../stores/useSettingsStore.ts';
+import { saveSession } from '../services/sessionDb.ts';
 
 export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElement>) {
   // ── Zustand stores ──────────────────────────────────────────────────
@@ -15,11 +16,18 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     goal,
     biometrics,
     calibrationRsa,
+    sessionStartedAt,
+    biometricTimeseries,
+    configSnapshots,
     setAppState,
     setBiometrics,
     setCalibrationStep,
     setCalibrationRsa,
     addLog,
+    startRecording,
+    recordBiometric,
+    recordConfigChange,
+    clearRecording,
   } = useSessionStore();
 
   const { config, isLiveMode, setConfig, mergeConfig } = useAudioStore();
@@ -53,8 +61,18 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
   const handleBiometricUpdate = useCallback(
     (d: BiometricData) => {
       setBiometrics(d);
+      // Record to timeseries during active session (sample every call — ~1Hz from HeartRateMonitor)
+      if (d.bpm > 0) {
+        recordBiometric({
+          timestamp: Date.now(),
+          bpm: d.bpm,
+          hrv: d.hrv,
+          signalQuality: d.signalQuality,
+          rsa: d.rsa,
+        });
+      }
     },
-    [setBiometrics],
+    [setBiometrics, recordBiometric],
   );
 
   const speak = useCallback((text: string) => {
@@ -82,6 +100,7 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     onToolCall: async (name: string, args: any) => {
       if (name === 'updateEntrainment') {
         mergeConfig(args);
+        recordConfigChange({ timestamp: Date.now(), config: { ...useAudioStore.getState().config, ...args } });
         addLog(
           'AI',
           `System Update: Beat ${args.binauralBeatFreq}Hz / Carrier ${args.carrierFreq}Hz`,
@@ -216,6 +235,8 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
             providerConfig,
           );
           setConfig(initialConfig);
+          startRecording(); // Begin recording biometric timeseries
+          recordConfigChange({ timestamp: Date.now(), config: initialConfig });
           setAppState(AppState.SESSION_ACTIVE);
         }, 5000);
       }, 5000);
@@ -230,7 +251,45 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     addLog,
     connectLive,
     setConfig,
+    startRecording,
+    recordConfigChange,
   ]);
+
+  // ── Session save on end ────────────────────────────────────────────
+  const prevStateRef = useRef(state);
+  useEffect(() => {
+    const prevState = prevStateRef.current;
+    prevStateRef.current = state;
+
+    // Save session when transitioning from SESSION_ACTIVE to SUMMARY
+    if (prevState === AppState.SESSION_ACTIVE && state === AppState.SUMMARY) {
+      const startedAt = useSessionStore.getState().sessionStartedAt;
+      const timeseries = useSessionStore.getState().biometricTimeseries;
+      const snapshots = useSessionStore.getState().configSnapshots;
+
+      if (startedAt && timeseries.length > 0) {
+        saveSession(
+          startedAt,
+          Date.now(),
+          goal,
+          calibrationRsa,
+          timeseries,
+          snapshots,
+        )
+          .then((id) => {
+            addLog('SYSTEM', `Session #${id} saved (${timeseries.length} samples)`);
+          })
+          .catch((err) => {
+            addLog('ERROR', `Failed to save session: ${err.message}`);
+          });
+      }
+    }
+
+    // Clear recording when returning to IDLE
+    if (state === AppState.IDLE && prevState === AppState.SUMMARY) {
+      clearRecording();
+    }
+  }, [state, goal, calibrationRsa, addLog, clearRecording]);
 
   // ── Public API ──────────────────────────────────────────────────────
   return {

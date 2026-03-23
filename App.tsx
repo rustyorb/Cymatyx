@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout.tsx';
 import SessionPage from './pages/SessionPage.tsx';
+import HistoryPage from './pages/HistoryPage.tsx';
 
 /**
  * Application root — React Router with layout wrapper.
@@ -9,11 +10,8 @@ import SessionPage from './pages/SessionPage.tsx';
  * Routes:
  *   /          → Main session page (goal select → calibrate → session → summary)
  *   /session   → Alias for the main session page
- *   *          → Redirect to /
- *
- * Future routes (planned):
  *   /history   → Session history browser (IndexedDB)
- *   /settings  → Provider & app configuration
+ *   *          → Redirect to /
  */
 export default function App() {
   return (
@@ -21,6 +19,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<SessionPage />} />
         <Route path="session" element={<SessionPage />} />
+        <Route path="history" element={<HistoryPage />} />
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

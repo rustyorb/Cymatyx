@@ -48,7 +48,7 @@ export function useLiveGemini({ apiKey: providedApiKey, onToolCall, onLog, onDeg
   const nextStartTimeRef = useRef<number>(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
   const tools: FunctionDeclaration[] = [
@@ -73,10 +73,12 @@ export function useLiveGemini({ apiKey: providedApiKey, onToolCall, onLog, onDeg
 
   // ── Cleanup audio resources ─────────────────────────────────────────
   const cleanupAudio = useCallback(() => {
-    processorRef.current?.disconnect();
+    // Signal the worklet processor to stop, then disconnect
+    workletNodeRef.current?.port.postMessage({ command: 'stop' });
+    workletNodeRef.current?.disconnect();
     sourceNodeRef.current?.disconnect();
     mediaStreamRef.current?.getTracks().forEach(t => t.stop());
-    processorRef.current = null;
+    workletNodeRef.current = null;
     sourceNodeRef.current = null;
     mediaStreamRef.current = null;
 
@@ -155,10 +157,17 @@ export function useLiveGemini({ apiKey: providedApiKey, onToolCall, onLog, onDeg
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
       inputContextRef.current = new AudioContextClass({ sampleRate: 16000 });
+
+      // Load AudioWorklet module (replaces deprecated ScriptProcessorNode)
+      await inputContextRef.current.audioWorklet.addModule('/audio-capture-processor.js');
+
       const source = inputContextRef.current.createMediaStreamSource(stream);
       sourceNodeRef.current = source;
-      const processor = inputContextRef.current.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
+
+      const workletNode = new AudioWorkletNode(inputContextRef.current, 'audio-capture-processor', {
+        processorOptions: { bufferSize: 4096 },
+      });
+      workletNodeRef.current = workletNode;
 
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
@@ -221,22 +230,30 @@ export function useLiveGemini({ apiKey: providedApiKey, onToolCall, onLog, onDeg
 
       sessionPromiseRef.current = sessionPromise;
 
-      processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        let sum = 0;
-        for (let i = 0; i < inputData.length; i += 100) sum += Math.abs(inputData[i]);
-        setMicVolume(sum / (inputData.length / 100) * 10);
+      // Handle audio data from the AudioWorklet thread
+      workletNode.port.onmessage = (event) => {
+        if (event.data?.type === 'audio') {
+          const inputData: Float32Array = event.data.buffer;
 
-        const base64 = arrayBufferToBase64(float32ToInt16(inputData).buffer);
-        sessionPromise.then(session => {
-          session.sendRealtimeInput({ media: { mimeType: 'audio/pcm;rate=16000', data: base64 } });
-        }).catch(() => {
-          // Swallow send errors during reconnection
-        });
+          // Compute mic volume for the UI meter
+          let sum = 0;
+          for (let i = 0; i < inputData.length; i += 100) sum += Math.abs(inputData[i]);
+          setMicVolume(sum / (inputData.length / 100) * 10);
+
+          // Encode and send to Gemini
+          const base64 = arrayBufferToBase64(float32ToInt16(inputData).buffer);
+          sessionPromise.then(session => {
+            session.sendRealtimeInput({ media: { mimeType: 'audio/pcm;rate=16000', data: base64 } });
+          }).catch(() => {
+            // Swallow send errors during reconnection
+          });
+        }
       };
 
-      source.connect(processor);
-      processor.connect(inputContextRef.current.destination);
+      source.connect(workletNode);
+      // AudioWorklet nodes don't need to connect to destination for capture,
+      // but connecting keeps the graph alive in all browsers
+      workletNode.connect(inputContextRef.current.destination);
 
     } catch (e: any) {
       onLog('ERROR', `Connection Failed: ${e.message}`);

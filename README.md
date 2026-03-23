@@ -54,7 +54,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - Three.js / @react-three/fiber + @react-three/drei (3D visuals)
 - Dexie.js (IndexedDB session persistence)
 - Recharts (signal & biometric visualization)
-- Google GenAI SDK (Gemini Live)
+- Google GenAI SDK (Gemini Live) with AudioWorklet-based mic capture
 
 ## Quickstart
 ```bash
@@ -74,3 +74,4 @@ Start/stop helpers:
 - Gemini Live still supported via the Gemini key field.
 - Face tracking model (~4MB) loads from CDN on first use. Works offline after browser caches it.
 - GPU delegate preferred for face tracking; falls back to CPU if WebGL unavailable.
+- Mic input uses AudioWorklet API (modern replacement for deprecated ScriptProcessorNode) for zero main-thread audio jank. Worklet processor runs on dedicated audio rendering thread.

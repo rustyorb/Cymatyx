@@ -108,7 +108,7 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     micVolume,
     getOutputData,
   } = useLiveGemini({
-    apiKey: setupState.geminiLiveKey,
+    apiKey: setupState.geminiLiveKey, // Vault resolves the real key inside useLiveGemini
     onAudioOutput: () => {},
     onLog: addLog,
     onDegraded: handleDegraded,

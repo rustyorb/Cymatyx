@@ -2,11 +2,15 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
+import { initProviderSecurity } from './services/providers.ts';
 
 console.group("System Boot: Cymatyx");
 console.log("Environment: ESM Browser");
 console.log("React Version:", React.version);
 console.groupEnd();
+
+// Initialize encrypted key vault before app renders
+initProviderSecurity().catch(e => console.warn('[Cymatyx] Vault init failed:', e));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
   constructor(props: { children: ReactNode }) {

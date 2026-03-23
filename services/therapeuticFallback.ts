@@ -248,11 +248,20 @@ function clamp(value: number, min: number, max: number): number {
 /**
  * Check if offline fallback should be used.
  * Returns true if no AI provider is configured or connection appears down.
+ * Checks the encrypted vault for keys when providerConfig.apiKey is empty.
  */
-export function shouldUseOfflineFallback(
-  providerConfig: { apiKey?: string; baseUrl?: string; model?: string } | null | undefined
-): boolean {
+export async function shouldUseOfflineFallback(
+  providerConfig: { apiKey?: string; baseUrl?: string; model?: string; provider?: string } | null | undefined
+): Promise<boolean> {
   if (!providerConfig) return true;
-  if (!providerConfig.apiKey || !providerConfig.baseUrl || !providerConfig.model) return true;
-  return false;
+  if (!providerConfig.baseUrl || !providerConfig.model) return true;
+  // If apiKey is present in config, we're good
+  if (providerConfig.apiKey) return false;
+  // Otherwise check the vault
+  if (providerConfig.provider) {
+    const { resolveApiKey } = await import('./providers.ts');
+    const vaultKey = await resolveApiKey(providerConfig.provider);
+    if (vaultKey) return false;
+  }
+  return true;
 }

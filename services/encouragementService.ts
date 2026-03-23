@@ -1,4 +1,5 @@
 import { ProviderConfig, GoalType } from '../types.ts';
+import { resolveApiKey } from './providers.ts';
 
 const FALLBACK_LINES = [
   "Stay with the warmth—slow breath, let the waves do the work.",
@@ -17,13 +18,19 @@ export const generateEncouragement = async (
   providerCfg?: ProviderConfig | null
 ): Promise<string> => {
   // If provider not ready, return a fallback line
-  if (!providerCfg?.apiKey || !providerCfg?.baseUrl || !providerCfg?.model) {
+  if (!providerCfg?.baseUrl || !providerCfg?.model) {
+    return FALLBACK_LINES[Math.floor(Math.random() * FALLBACK_LINES.length)];
+  }
+
+  // Resolve API key from vault (encrypted) or env var
+  const apiKey = providerCfg.apiKey || await resolveApiKey(providerCfg.provider);
+  if (!apiKey) {
     return FALLBACK_LINES[Math.floor(Math.random() * FALLBACK_LINES.length)];
   }
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (providerCfg.prefix) headers[providerCfg.authHeader || 'Authorization'] = `${providerCfg.prefix}${providerCfg.apiKey}`;
-  else headers[providerCfg.authHeader || 'Authorization'] = providerCfg.apiKey;
+  if (providerCfg.prefix) headers[providerCfg.authHeader || 'Authorization'] = `${providerCfg.prefix}${apiKey}`;
+  else headers[providerCfg.authHeader || 'Authorization'] = apiKey;
   if (providerCfg.extraHeaders) Object.assign(headers, providerCfg.extraHeaders);
 
   try {

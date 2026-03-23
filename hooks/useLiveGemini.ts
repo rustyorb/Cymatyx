@@ -139,7 +139,13 @@ export function useLiveGemini({ apiKey: providedApiKey, onToolCall, onLog, onDeg
     setConnectionStatus('connecting');
 
     try {
-      const apiKey = providedApiKey || process.env.API_KEY;
+      // Resolve API key: prop > vault > env var > build-time env
+      let apiKey = providedApiKey;
+      if (!apiKey) {
+        const { resolveGeminiLiveKey } = await import('../services/providers.ts');
+        apiKey = await resolveGeminiLiveKey();
+      }
+      if (!apiKey) apiKey = process.env.API_KEY;
       if (!apiKey) throw new Error("API Key is missing (set in Setup panel or environment).");
 
       // Clean up previous audio resources before creating new ones

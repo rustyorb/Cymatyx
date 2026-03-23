@@ -1,5 +1,6 @@
 import { EntrainmentConfig, GoalType, ProviderConfig } from '../types.ts';
 import { generateOfflineConfig, shouldUseOfflineFallback } from './therapeuticFallback.ts';
+import { resolveApiKey } from './providers.ts';
 import type { EntrainmentSource } from '../stores/useAudioStore.ts';
 
 /** Result from config generation, tagged with its source */
@@ -64,14 +65,19 @@ export const generateSessionConfig = async (
   history: string[],
   providerCfg?: ProviderConfig | null
 ): Promise<ConfigResult> => {
-  if (goal === GoalType.SELF_LOVE || shouldUseOfflineFallback(providerCfg)) {
+  if (goal === GoalType.SELF_LOVE || await shouldUseOfflineFallback(providerCfg)) {
     console.log('[Cymatyx] Using rule-based therapeutic fallback');
     return { config: generateOfflineConfig(goal, currentBpm, currentHrv), source: 'offline' };
   }
 
+  // Resolve API key from vault (encrypted) or env var
+  const apiKey = providerCfg.apiKey || await resolveApiKey(providerCfg.provider);
+
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (providerCfg.prefix) headers[providerCfg.authHeader || 'Authorization'] = `${providerCfg.prefix}${providerCfg.apiKey}`;
-  else headers[providerCfg.authHeader || 'Authorization'] = providerCfg.apiKey;
+  if (apiKey) {
+    if (providerCfg.prefix) headers[providerCfg.authHeader || 'Authorization'] = `${providerCfg.prefix}${apiKey}`;
+    else headers[providerCfg.authHeader || 'Authorization'] = apiKey;
+  }
   if (providerCfg.extraHeaders) Object.assign(headers, providerCfg.extraHeaders);
 
   try {

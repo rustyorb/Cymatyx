@@ -32,6 +32,24 @@ export interface EntrainmentConfig {
   explanation: string; // Gemini's reasoning
 }
 
+/**
+ * Configuration for the 40Hz Gamma / ISF (Intermittent Sensory Flickering) module.
+ * Based on Iaccarino et al. 2016 (Nature) — 40Hz gamma entrainment reduces
+ * amyloid plaques and improves cognitive function in Alzheimer's models.
+ */
+export interface GammaConfig {
+  /** ISF mode active — synchronized 40Hz audio + visual flicker */
+  isfEnabled: boolean;
+  /** 40Hz click train volume (0-1, independent of binaural volume) */
+  clickTrainVolume: number;
+  /** Visual flicker intensity (0-1) — controls opacity of the 40Hz flash overlay */
+  flickerIntensity: number;
+  /** Whether user has acknowledged the photosensitive epilepsy warning */
+  epilepsyWarningAcknowledged: boolean;
+  /** Flicker duty cycle (0-1) — proportion of each cycle that is "on" (default 0.5 = square wave) */
+  flickerDutyCycle: number;
+}
+
 export interface SessionLog {
   timestamp: number;
   bpm: number;

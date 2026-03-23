@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState, Suspense } from 'react';
-import { EntrainmentConfig } from '../types.ts';
+import { EntrainmentConfig, GoalType } from '../types.ts';
 import Visualizer3D from './Visualizer3D.tsx';
+import GammaFlickerOverlay from './GammaFlickerOverlay.tsx';
+import GammaClickTrain from './GammaClickTrain.tsx';
+import { useGammaStore } from '../stores/useGammaStore.ts';
+import { useSessionStore } from '../stores/useSessionStore.ts';
 
 interface Props {
   config: EntrainmentConfig;
@@ -22,6 +26,11 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
   const [visualPhase, setVisualPhase] = useState(0);
   const [panPosition, setPanPosition] = useState(0); 
   const animationFrameRef = useRef<number | null>(null);
+
+  // Gamma ISF state
+  const { gamma } = useGammaStore();
+  const goal = useSessionStore((s) => s.goal);
+  const isNeuroRegen = goal === GoalType.NEURO_REGEN;
 
   useEffect(() => {
     if (!audioCtxRef.current) {
@@ -139,14 +148,37 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
     return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
   }, [isPlaying, config.visualPulseRate, config.spatialPan]);
 
+  // Determine if ISF flicker and click train should be active
+  const isfActive = isNeuroRegen && gamma.isfEnabled && isPlaying;
+  const flickerActive = isfActive && gamma.epilepsyWarningAcknowledged && gamma.flickerIntensity > 0;
+
   return (
     <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] relative overflow-hidden rounded-3xl bg-slate-950 shadow-2xl border border-slate-800 group">
+        {/* 3D particle tunnel background */}
         <div className="absolute inset-0 z-0">
              <Suspense fallback={<div className="w-full h-full bg-slate-900" />}>
                 <Visualizer3D speed={config.visualPulseRate} color={config.primaryColor} />
              </Suspense>
         </div>
+
+        {/* 40Hz visual flicker overlay (ISF mode only) */}
+        <GammaFlickerOverlay
+          isActive={flickerActive}
+          intensity={gamma.flickerIntensity}
+          dutyCycle={gamma.flickerDutyCycle}
+          color={config.primaryColor}
+        />
+
+        {/* 40Hz click train audio (ISF mode only) */}
+        <GammaClickTrain
+          isPlaying={isfActive}
+          volume={gamma.clickTrainVolume}
+        />
+
+        {/* Radial gradient overlay */}
         <div className="absolute inset-0 z-1 bg-[radial-gradient(transparent,rgba(15,23,42,0.8))]" />
+
+        {/* Pan position indicator */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
              <div className="w-[80%] h-[1px] bg-white/10 relative">
                  <div 
@@ -159,6 +191,8 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
                  />
              </div>
         </div>
+
+        {/* Center display */}
         <div className="absolute z-30 flex flex-col items-center text-center pointer-events-none mix-blend-screen">
             <div 
                 className="w-16 h-16 rounded-full border-2 border-white/50 flex items-center justify-center backdrop-blur-sm"
@@ -178,8 +212,17 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
             <h2 className="mt-8 text-5xl font-thin tracking-tighter text-white tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
                {config.binauralBeatFreq.toFixed(1)}<span className="text-xl opacity-50 ml-1">Hz</span>
             </h2>
-            <p className="text-white/70 text-[10px] uppercase tracking-[0.3em] mt-2 font-bold">Phantom Layering Active</p>
+            <p className="text-white/70 text-[10px] uppercase tracking-[0.3em] mt-2 font-bold">
+              {isNeuroRegen && gamma.isfEnabled ? '40Hz Gamma ISF Active' : 'Phantom Layering Active'}
+            </p>
+            {isNeuroRegen && gamma.isfEnabled && (
+              <p className="text-purple-300/60 text-[9px] uppercase tracking-[0.2em] mt-1">
+                Iaccarino Protocol • Combined Audio-Visual
+              </p>
+            )}
         </div>
+
+        {/* Bottom info bar */}
         <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-12 text-[10px] font-mono text-cyan-200/50 tracking-widest uppercase z-30">
             <div className="flex flex-col items-center gap-1">
                 <span className="text-white/30">Carrier</span>
@@ -189,6 +232,12 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
                 <span className="text-white/30">Strobe</span>
                 <span>{config.visualPulseRate} Hz</span>
             </div>
+            {isNeuroRegen && gamma.isfEnabled && (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-white/30">ISF</span>
+                <span className="text-purple-300/70">40 Hz Click+Flicker</span>
+              </div>
+            )}
         </div>
     </div>
   );

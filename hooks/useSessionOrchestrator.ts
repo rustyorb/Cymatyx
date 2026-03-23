@@ -8,6 +8,7 @@ import { AppState, BiometricData } from '../types.ts';
 import { useSessionStore } from '../stores/useSessionStore.ts';
 import { useAudioStore } from '../stores/useAudioStore.ts';
 import { useSettingsStore } from '../stores/useSettingsStore.ts';
+import { useGammaStore } from '../stores/useGammaStore.ts';
 import { saveSession } from '../services/sessionDb.ts';
 
 export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElement>) {
@@ -39,6 +40,8 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     selfLoveTtsEnabled,
     addSelfLoveLine,
   } = useSettingsStore();
+
+  const resetGamma = useGammaStore((s) => s.resetGamma);
 
   // ── Derived ─────────────────────────────────────────────────────────
   const providerConfig = useMemo(
@@ -321,11 +324,12 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
       }
     }
 
-    // Clear recording when returning to IDLE
+    // Clear recording and reset gamma when returning to IDLE
     if (state === AppState.IDLE && prevState === AppState.SUMMARY) {
       clearRecording();
+      resetGamma();
     }
-  }, [state, goal, calibrationRsa, addLog, clearRecording]);
+  }, [state, goal, calibrationRsa, addLog, clearRecording, resetGamma]);
 
   // ── Public API ──────────────────────────────────────────────────────
   return {

@@ -1,9 +1,14 @@
 import React from 'react';
 import EntrainmentPlayer from './EntrainmentPlayer.tsx';
+import GammaControlPanel from './GammaControlPanel.tsx';
 import { useAudioStore } from '../stores/useAudioStore.ts';
+import { useSessionStore } from '../stores/useSessionStore.ts';
+import { GoalType } from '../types.ts';
 
 export default function SessionView() {
   const { config, volume, setVolume } = useAudioStore();
+  const goal = useSessionStore((s) => s.goal);
+  const isNeuroRegen = goal === GoalType.NEURO_REGEN;
 
   return (
     <div className="h-full flex flex-col gap-6">
@@ -20,6 +25,9 @@ export default function SessionView() {
           className="flex-grow accent-cyan-500"
         />
       </div>
+
+      {/* 40Hz Gamma ISF controls — only shown for NEURO_REGEN goal */}
+      {isNeuroRegen && <GammaControlPanel />}
     </div>
   );
 }

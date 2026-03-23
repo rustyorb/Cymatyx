@@ -16,11 +16,23 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - Enter API key → Fetch /v1/models → alphabetized dropdown → set default model
 - Gemini Live key field for real-time audio "Neural Connector"
 - Entrainment generation via selected provider (/chat/completions JSON)
-- Goal presets: Relaxation, Focus, Energy, Neuro Regen (40Hz Gamma), Self-Love
+- Goal presets: Relaxation, Focus, Energy, ⚡ 40Hz Gamma (Alzheimer's Protocol), Self-Love
+
+### 40Hz Gamma Audio-Visual Module (ISF)
+- **Intermittent Sensory Flickering (ISF)** — combined 40Hz auditory click train + synchronized visual flicker for multi-sensory gamma entrainment
+- **40Hz Click Train** (`GammaClickTrain`) — amplitude-modulated white noise via Web Audio API: bandpass-filtered noise → 40Hz square-wave AM envelope → distinct auditory clicks at exactly 40Hz
+- **40Hz Visual Flicker** (`GammaFlickerOverlay`) — precise requestAnimationFrame-driven screen flash at 40Hz with configurable intensity and duty cycle
+- **Gamma Control Panel** — collapsible UI with ISF master toggle, click train volume, flicker intensity, and duty cycle controls; only visible when Neuro Regen goal is selected
+- **Photosensitive epilepsy safety** — mandatory warning modal with informed consent before any visual flicker is enabled; "Audio Only" option for users who decline flicker
+- **Configurable duty cycle** — adjustable on/off ratio (default 50% = square wave, per standard protocol)
+- **Independent audio path** — click train runs alongside binaural beat engine (separate AudioContext) for layered entrainment
+- **Zustand state** (`useGammaStore`) — dedicated store for ISF config, auto-reset on session end
+- Based on: Iaccarino et al. (Nature 2016) 40Hz gamma reduces amyloid-β; Martorell et al. (Cell 2019) combined audio-visual more effective than unimodal
 
 ### Visualization
 - 3D visual entrainment via Three.js / React Three Fiber
 - Binaural beat audio synthesis with spatial panning
+- 40Hz flicker overlay (ISF mode) with screen-blend compositing
 
 ### Session Persistence & History
 - **IndexedDB via Dexie.js** (`services/sessionDb.ts`) — stores full session records: biometric timeseries, entrainment config snapshots, goal, duration, calibration data
@@ -41,10 +53,10 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 
 ## Architecture
 - **Routing**: React Router v7 — `Layout` (persistent header) + page-level routes
-- **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode, entrainment source tracking), `useSettingsStore` (provider setup, self-love settings)
-- **Orchestration**: `useSessionOrchestrator` hook — consolidates calibration, telemetry loops, Gemini connection, and canvas rendering
+- **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode, entrainment source tracking), `useSettingsStore` (provider setup, self-love settings), `useGammaStore` (40Hz ISF config, panel state)
+- **Orchestration**: `useSessionOrchestrator` hook — consolidates calibration, telemetry loops, Gemini connection, canvas rendering, and gamma state reset
 - **Pages**: `pages/SessionPage.tsx` (main session flow), `pages/HistoryPage.tsx` (session list + aggregate stats), `pages/SessionDetailPage.tsx` (individual session detail with biometric charts)
-- **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView) and panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog)
+- **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView), panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog), and gamma module (GammaControlPanel, GammaClickTrain, GammaFlickerOverlay, EpilepsyWarning)
 
 ## Tech Stack
 - React 18 + TypeScript + Vite
@@ -55,6 +67,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - Dexie.js (IndexedDB session persistence)
 - Recharts (signal & biometric visualization)
 - Google GenAI SDK (Gemini Live) with AudioWorklet-based mic capture
+- Web Audio API (binaural beats + 40Hz AM click train)
 
 ## Quickstart
 ```bash
@@ -75,3 +88,4 @@ Start/stop helpers:
 - Face tracking model (~4MB) loads from CDN on first use. Works offline after browser caches it.
 - GPU delegate preferred for face tracking; falls back to CPU if WebGL unavailable.
 - Mic input uses AudioWorklet API (modern replacement for deprecated ScriptProcessorNode) for zero main-thread audio jank. Worklet processor runs on dedicated audio rendering thread.
+- **40Hz Gamma ISF** requires user consent before visual flicker activates. Audio-only mode available for photosensitive users.

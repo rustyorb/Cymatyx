@@ -26,11 +26,20 @@ export default function GoalSelection({ onStartCalibration }: GoalSelectionProps
               onClick={() => setGoal(g)}
               className={`px-6 py-4 rounded-xl text-xs font-bold transition-all uppercase tracking-[0.2em] border ${
                 goal === g
-                  ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.1)]'
-                  : 'bg-slate-900/50 text-slate-600 border-slate-800'
+                  ? g === GoalType.NEURO_REGEN
+                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)]'
+                    : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.1)]'
+                  : g === GoalType.NEURO_REGEN
+                    ? 'bg-purple-950/30 text-purple-600 border-purple-900/50'
+                    : 'bg-slate-900/50 text-slate-600 border-slate-800'
               }`}
             >
-              {g.replace('_', ' ')}
+              {g === GoalType.NEURO_REGEN ? '⚡ 40Hz Gamma' : g.replace('_', ' ')}
+              {g === GoalType.NEURO_REGEN && (
+                <span className="block text-[8px] font-normal tracking-wider mt-0.5 opacity-60">
+                  Alzheimer's Protocol (ISF)
+                </span>
+              )}
             </button>
           ))}
         </div>

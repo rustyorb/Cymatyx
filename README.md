@@ -68,6 +68,22 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - Recharts (signal & biometric visualization)
 - Google GenAI SDK (Gemini Live) with AudioWorklet-based mic capture
 - Web Audio API (binaural beats + 40Hz AM click train)
+- Vitest + @testing-library/react (test suite)
+
+## Testing
+
+Vitest + React Testing Library with jsdom environment. 101 tests covering core logic:
+
+```bash
+npm test              # Run all tests once
+npm run test:watch    # Watch mode (re-run on file changes)
+```
+
+**Test coverage:**
+- `tests/utils/signalProcessing.test.ts` — HeartbeatEngine (DFT pipeline, BPM detection, HRV/RMSSD, window management, confidence scoring) + lighting status
+- `tests/utils/audioUtils.test.ts` — PCM conversion (float32↔int16, base64↔ArrayBuffer, resampling) with roundtrip verification
+- `tests/services/therapeuticFallback.test.ts` — Offline rule engine (all 5 goal types, HR zone boundaries, HRV adjustments, clamping, shouldUseOfflineFallback)
+- `tests/stores/stores.test.ts` — All 4 Zustand stores (useSessionStore, useAudioStore, useGammaStore, useSettingsStore) — state mutations, array caps, merge semantics
 
 ## Quickstart
 ```bash

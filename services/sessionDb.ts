@@ -130,3 +130,33 @@ export async function getSessionCount(): Promise<number> {
 export async function getSessionsByGoal(goal: GoalType): Promise<SessionRecord[]> {
   return db.sessions.where('goal').equals(goal).reverse().sortBy('startedAt');
 }
+
+/** Export a session as a JSON blob download */
+export async function exportSession(id: number): Promise<void> {
+  const session = await getSession(id);
+  if (!session) throw new Error(`Session #${id} not found`);
+
+  const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cymatyx-session-${id}-${new Date(session.startedAt).toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/** Export all sessions as a single JSON blob download */
+export async function exportAllSessions(): Promise<void> {
+  const sessions = await getAllSessions();
+  const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cymatyx-sessions-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

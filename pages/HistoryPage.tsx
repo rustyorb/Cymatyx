@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getAllSessions, deleteSession, type SessionRecord } from '../services/sessionDb.ts';
+import { useNavigate } from 'react-router-dom';
+import { getAllSessions, deleteSession, exportAllSessions, type SessionRecord } from '../services/sessionDb.ts';
 
 /** Format epoch ms to locale date string */
 function fmtDate(ts: number): string {
@@ -29,6 +30,7 @@ const goalLabels: Record<string, string> = {
 };
 
 export default function HistoryPage() {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -74,9 +76,17 @@ export default function HistoryPage() {
         <h2 className="text-xl text-white font-bold tracking-tight">
           Session History
         </h2>
-        <span className="text-slate-500 text-xs">
-          {sessions.length} session{sessions.length !== 1 ? 's' : ''}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => exportAllSessions()}
+            className="px-3 py-1 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-700 hover:text-slate-200 transition-colors text-[10px] uppercase tracking-widest"
+          >
+            Export All
+          </button>
+          <span className="text-slate-500 text-xs">
+            {sessions.length} session{sessions.length !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
 
       {/* ── Summary Stats ──────────────────────────────────────────── */}
@@ -108,7 +118,8 @@ export default function HistoryPage() {
         {sessions.map((session) => (
           <div
             key={session.id}
-            className="bg-slate-900/50 rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition-colors"
+            className="bg-slate-900/50 rounded-2xl p-5 border border-slate-800 hover:border-cyan-800/50 transition-colors cursor-pointer"
+            onClick={() => session.id && navigate(`/history/${session.id}`)}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -135,7 +146,7 @@ export default function HistoryPage() {
 
             <div className="flex justify-end mt-3">
               <button
-                onClick={() => session.id && handleDelete(session.id)}
+                onClick={(e) => { e.stopPropagation(); session.id && handleDelete(session.id); }}
                 className="text-[10px] text-red-400/50 hover:text-red-400 transition-colors uppercase tracking-widest"
               >
                 Delete

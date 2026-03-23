@@ -165,6 +165,7 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
               bio.hrv,
             );
             setConfig(offlineConfig, 'offline');
+            recordConfigChange({ timestamp: Date.now(), config: offlineConfig });
           } else {
             // Non-live mode — use AI with offline fallback
             addLog('SYSTEM', 'Analyzing bio-trend...');
@@ -176,6 +177,7 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
               providerConfig,
             );
             setConfig(result.config, result.source);
+            recordConfigChange({ timestamp: Date.now(), config: result.config });
             if (result.source === 'offline') {
               addLog('SYSTEM', 'Using offline therapeutic fallback');
             }

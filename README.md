@@ -22,6 +22,14 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - 3D visual entrainment via Three.js / React Three Fiber
 - Binaural beat audio synthesis with spatial panning
 
+### Session Persistence & History
+- **IndexedDB via Dexie.js** (`services/sessionDb.ts`) — stores full session records: biometric timeseries, entrainment config snapshots, goal, duration, calibration data
+- **Biometric recording** — HR, HRV, signal quality sampled ~1Hz during active sessions; entrainment config changes logged on every telemetry update
+- **Session history page** (`/history`) — aggregate stats (total sessions, total time, avg BPM, avg HRV), session list with summary cards, delete
+- **Session detail page** (`/history/:id`) — deep dive into individual sessions with interactive Recharts graphs: BPM over time, HRV (RMSSD), signal quality %, entrainment parameter timeline (beat freq, breathing rate, visual pulse)
+- **JSON export** — export individual sessions or all sessions as JSON for external analysis
+- **Auto-save** — sessions automatically persist to IndexedDB when transitioning from active session to summary
+
 ### Offline Therapeutic Fallback
 - **Rule-based therapeutic engine** (`services/therapeuticFallback.ts`) — generates entrainment parameters from neuroscience research without any AI provider
 - HR zone classification (resting → low → moderate → elevated → high) drives real-time parameter adaptation
@@ -35,7 +43,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - **Routing**: React Router v7 — `Layout` (persistent header) + page-level routes
 - **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode, entrainment source tracking), `useSettingsStore` (provider setup, self-love settings)
 - **Orchestration**: `useSessionOrchestrator` hook — consolidates calibration, telemetry loops, Gemini connection, and canvas rendering
-- **Pages**: `pages/SessionPage.tsx` — main session flow (goal select → calibrate → active session → summary)
+- **Pages**: `pages/SessionPage.tsx` (main session flow), `pages/HistoryPage.tsx` (session list + aggregate stats), `pages/SessionDetailPage.tsx` (individual session detail with biometric charts)
 - **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView) and panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog)
 
 ## Tech Stack
@@ -44,7 +52,8 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - Zustand (state management)
 - MediaPipe Tasks Vision (face tracking)
 - Three.js / @react-three/fiber + @react-three/drei (3D visuals)
-- Recharts (signal visualization)
+- Dexie.js (IndexedDB session persistence)
+- Recharts (signal & biometric visualization)
 - Google GenAI SDK (Gemini Live)
 
 ## Quickstart

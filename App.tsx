@@ -3,15 +3,17 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout.tsx';
 import SessionPage from './pages/SessionPage.tsx';
 import HistoryPage from './pages/HistoryPage.tsx';
+import SessionDetailPage from './pages/SessionDetailPage.tsx';
 
 /**
  * Application root — React Router with layout wrapper.
  *
  * Routes:
- *   /          → Main session page (goal select → calibrate → session → summary)
- *   /session   → Alias for the main session page
- *   /history   → Session history browser (IndexedDB)
- *   *          → Redirect to /
+ *   /              → Main session page (goal select → calibrate → session → summary)
+ *   /session       → Alias for the main session page
+ *   /history       → Session history browser (IndexedDB)
+ *   /history/:id   → Session detail with biometric charts
+ *   *              → Redirect to /
  */
 export default function App() {
   return (
@@ -20,6 +22,7 @@ export default function App() {
         <Route index element={<SessionPage />} />
         <Route path="session" element={<SessionPage />} />
         <Route path="history" element={<HistoryPage />} />
+        <Route path="history/:id" element={<SessionDetailPage />} />
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -1,5 +1,12 @@
 import { EntrainmentConfig, GoalType, ProviderConfig } from '../types.ts';
 import { generateOfflineConfig, shouldUseOfflineFallback } from './therapeuticFallback.ts';
+import type { EntrainmentSource } from '../stores/useAudioStore.ts';
+
+/** Result from config generation, tagged with its source */
+export interface ConfigResult {
+  config: EntrainmentConfig;
+  source: EntrainmentSource;
+}
 
 const defaultConfig: EntrainmentConfig = {
   binauralBeatFreq: 10,
@@ -56,23 +63,10 @@ export const generateSessionConfig = async (
   currentHrv: number,
   history: string[],
   providerCfg?: ProviderConfig | null
-): Promise<EntrainmentConfig> => {
-  if (goal === GoalType.SELF_LOVE) {
-    return {
-      binauralBeatFreq: 8.2,
-      carrierFreq: 222,
-      visualPulseRate: 8.2,
-      primaryColor: '#ff66cc',
-      breathingRate: 6,
-      spatialPan: 0.3,
-      inductionText: 'Warmth rising, safe and centered. Breathe into your own gravity.',
-      explanation: 'Self-love protocol: mid-theta with gentle carrier and slow breathing.'
-    };
-  }
-
-  if (shouldUseOfflineFallback(providerCfg)) {
-    console.log('[Cymatyx] No AI provider configured — using rule-based therapeutic fallback');
-    return generateOfflineConfig(goal, currentBpm, currentHrv);
+): Promise<ConfigResult> => {
+  if (goal === GoalType.SELF_LOVE || shouldUseOfflineFallback(providerCfg)) {
+    console.log('[Cymatyx] Using rule-based therapeutic fallback');
+    return { config: generateOfflineConfig(goal, currentBpm, currentHrv), source: 'offline' };
   }
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -98,15 +92,15 @@ export const generateSessionConfig = async (
     if (!res.ok) {
       const text = await res.text();
       console.warn('Model call failed', res.status, text, '— falling back to offline therapeutic logic');
-      return generateOfflineConfig(goal, currentBpm, currentHrv);
+      return { config: generateOfflineConfig(goal, currentBpm, currentHrv), source: 'offline' };
     }
 
     const data = await res.json();
     const content = data.choices?.[0]?.message?.content;
     const text = Array.isArray(content) ? content.map((c: any) => c.text || c).join('\n') : content;
-    return parseJson(text || '{}');
+    return { config: parseJson(text || '{}'), source: 'ai' };
   } catch (e) {
     console.error('Model invocation error', e, '— falling back to offline therapeutic logic');
-    return generateOfflineConfig(goal, currentBpm, currentHrv);
+    return { config: generateOfflineConfig(goal, currentBpm, currentHrv), source: 'offline' };
   }
 };

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLiveGemini } from './useLiveGemini.ts';
 import { generateSessionConfig } from '../services/geminiService.ts';
 import { generateEncouragement } from '../services/encouragementService.ts';
+import { generateOfflineConfig } from '../services/therapeuticFallback.ts';
 import { resolveProviderConfig } from '../services/providers.ts';
 import { AppState, BiometricData } from '../types.ts';
 import { useSessionStore } from '../stores/useSessionStore.ts';
@@ -99,7 +100,7 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     onLog: addLog,
     onToolCall: async (name: string, args: any) => {
       if (name === 'updateEntrainment') {
-        mergeConfig(args);
+        mergeConfig(args, 'live');
         recordConfigChange({ timestamp: Date.now(), config: { ...useAudioStore.getState().config, ...args } });
         addLog(
           'AI',
@@ -155,16 +156,29 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
             sendText(
               `Telemetry: ${Math.round(bio.bpm)} BPM. RSA: ${calibrationRsa}. Goal: ${goalRef.current}. Update physics.`,
             );
-          } else if (!isLiveMode) {
+          } else if (isLiveMode && !isConnected) {
+            // Live mode selected but not connected — use offline fallback
+            addLog('SYSTEM', 'Live mode disconnected — using offline therapeutic fallback');
+            const offlineConfig = generateOfflineConfig(
+              goalRef.current,
+              bio.bpm,
+              bio.hrv,
+            );
+            setConfig(offlineConfig, 'offline');
+          } else {
+            // Non-live mode — use AI with offline fallback
             addLog('SYSTEM', 'Analyzing bio-trend...');
-            const newConfig = await generateSessionConfig(
+            const result = await generateSessionConfig(
               goalRef.current,
               bio.bpm,
               bio.hrv,
               [],
               providerConfig,
             );
-            setConfig(newConfig);
+            setConfig(result.config, result.source);
+            if (result.source === 'offline') {
+              addLog('SYSTEM', 'Using offline therapeutic fallback');
+            }
           }
         }
       }, 15000);
@@ -227,16 +241,19 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
             );
           }
 
-          const initialConfig = await generateSessionConfig(
+          const initialResult = await generateSessionConfig(
             goal,
             biometricsRef.current.bpm || 75,
             50,
             [],
             providerConfig,
           );
-          setConfig(initialConfig);
+          setConfig(initialResult.config, initialResult.source);
           startRecording(); // Begin recording biometric timeseries
-          recordConfigChange({ timestamp: Date.now(), config: initialConfig });
+          recordConfigChange({ timestamp: Date.now(), config: initialResult.config });
+          if (initialResult.source === 'offline') {
+            addLog('SYSTEM', 'Offline therapeutic fallback active — no AI provider needed');
+          }
           setAppState(AppState.SESSION_ACTIVE);
         }, 5000);
       }, 5000);
@@ -315,6 +332,7 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     systemLog: useSessionStore((s) => s.systemLog),
     config,
     isLiveMode,
+    entrainmentSource: useAudioStore((s) => s.entrainmentSource),
     volume: useAudioStore((s) => s.volume),
     setupState,
     selfLoveEnabled,

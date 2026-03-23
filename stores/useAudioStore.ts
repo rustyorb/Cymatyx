@@ -1,12 +1,17 @@
 import { create } from 'zustand';
 import type { EntrainmentConfig } from '../types.ts';
 
+/** Source of current entrainment parameters */
+export type EntrainmentSource = 'ai' | 'offline' | 'live' | 'init';
+
 interface AudioState {
   config: EntrainmentConfig;
   volume: number;
   isLiveMode: boolean;
-  setConfig: (config: EntrainmentConfig) => void;
-  mergeConfig: (partial: Partial<EntrainmentConfig>) => void;
+  /** Tracks where the current entrainment config came from */
+  entrainmentSource: EntrainmentSource;
+  setConfig: (config: EntrainmentConfig, source?: EntrainmentSource) => void;
+  mergeConfig: (partial: Partial<EntrainmentConfig>, source?: EntrainmentSource) => void;
   setVolume: (volume: number) => void;
   setIsLiveMode: (isLiveMode: boolean) => void;
 }
@@ -24,9 +29,13 @@ export const useAudioStore = create<AudioState>((set) => ({
   },
   volume: 0.5,
   isLiveMode: true,
-  setConfig: (config) => set({ config }),
-  mergeConfig: (partial) =>
-    set((state) => ({ config: { ...state.config, ...partial } })),
+  entrainmentSource: 'init',
+  setConfig: (config, source) => set({ config, ...(source ? { entrainmentSource: source } : {}) }),
+  mergeConfig: (partial, source) =>
+    set((state) => ({
+      config: { ...state.config, ...partial },
+      ...(source ? { entrainmentSource: source } : {}),
+    })),
   setVolume: (volume) => set({ volume }),
   setIsLiveMode: (isLiveMode) => set({ isLiveMode }),
 }));

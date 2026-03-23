@@ -22,13 +22,18 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - 3D visual entrainment via Three.js / React Three Fiber
 - Binaural beat audio synthesis with spatial panning
 
-### Offline Fallback
-- Rule-based therapeutic logic: HR zones map to binaural frequencies and visual params without AI
-- Automatic activation when no AI provider is available
+### Offline Therapeutic Fallback
+- **Rule-based therapeutic engine** (`services/therapeuticFallback.ts`) — generates entrainment parameters from neuroscience research without any AI provider
+- HR zone classification (resting → low → moderate → elevated → high) drives real-time parameter adaptation
+- Goal-specific presets with HR zone offsets: beat frequency, carrier tone, breathing rate, visual color, spatial panning
+- HRV-based refinement: low HRV (autonomic stress) deepens calming effect; high HRV allows more aggressive targeting
+- **Automatic activation** when: no AI provider configured, API call fails, Gemini Live disconnects mid-session, or Self-Love goal selected
+- **Entrainment source indicator** in Telemetry Panel shows current engine: AI Provider, Offline Rules, Gemini Live, or Initializing
+- Based on: Oster (1973) auditory beats, Iaccarino et al. (2016) 40Hz gamma protocol, Thaut (2005) rhythmic entrainment
 
 ## Architecture
 - **Routing**: React Router v7 — `Layout` (persistent header) + page-level routes
-- **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode), `useSettingsStore` (provider setup, self-love settings)
+- **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode, entrainment source tracking), `useSettingsStore` (provider setup, self-love settings)
 - **Orchestration**: `useSessionOrchestrator` hook — consolidates calibration, telemetry loops, Gemini connection, and canvas rendering
 - **Pages**: `pages/SessionPage.tsx` — main session flow (goal select → calibrate → active session → summary)
 - **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView) and panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog)

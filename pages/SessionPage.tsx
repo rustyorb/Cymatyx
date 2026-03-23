@@ -30,7 +30,9 @@ export default function SessionPage() {
     handleStartCalibration,
     handleBiometricUpdate,
     disconnectLive,
+    retryLive,
     isConnected,
+    connectionStatus,
     micVolume,
     setupState,
     setSetupState,
@@ -82,7 +84,9 @@ export default function SessionPage() {
         <NeuralConnector
           canvasRef={canvasRef}
           isConnected={isConnected}
+          connectionStatus={connectionStatus}
           micVolume={micVolume}
+          onRetry={retryLive}
         />
         <SelfLoveCoach />
         <KernelLog />

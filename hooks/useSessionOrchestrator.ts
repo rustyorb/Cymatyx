@@ -86,18 +86,32 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     window.speechSynthesis.speak(utter);
   }, []);
 
-  // ── Live Gemini ─────────────────────────────────────────────────────
+  // ── Live Gemini (with auto-reconnect + offline degradation) ─────────
+  const handleDegraded = useCallback(() => {
+    addLog('SYSTEM', 'Neural link failed — switching to offline therapeutic mode');
+    // Automatically generate offline config for current biometrics
+    const bio = biometricsRef.current;
+    if (bio.bpm > 0) {
+      const offlineConfig = generateOfflineConfig(goalRef.current, bio.bpm, bio.hrv);
+      setConfig(offlineConfig, 'offline');
+      recordConfigChange({ timestamp: Date.now(), config: offlineConfig });
+    }
+  }, [addLog, setConfig, recordConfigChange]);
+
   const {
     connect: connectLive,
     disconnect: disconnectLive,
+    retry: retryLive,
     sendText,
     isConnected,
+    connectionStatus,
     micVolume,
     getOutputData,
   } = useLiveGemini({
     apiKey: setupState.geminiLiveKey,
     onAudioOutput: () => {},
     onLog: addLog,
+    onDegraded: handleDegraded,
     onToolCall: async (name: string, args: any) => {
       if (name === 'updateEntrainment') {
         mergeConfig(args, 'live');
@@ -158,7 +172,10 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
             );
           } else if (isLiveMode && !isConnected) {
             // Live mode selected but not connected — use offline fallback
-            addLog('SYSTEM', 'Live mode disconnected — using offline therapeutic fallback');
+            // Only log if actually failed/disconnected, not during reconnection
+            if (connectionStatus !== 'reconnecting' && connectionStatus !== 'connecting') {
+              addLog('SYSTEM', 'Live mode disconnected — using offline therapeutic fallback');
+            }
             const offlineConfig = generateOfflineConfig(
               goalRef.current,
               bio.bpm,
@@ -186,7 +203,7 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
       }, 15000);
     }
     return () => clearInterval(interval);
-  }, [state, isLiveMode, isConnected, calibrationRsa, providerConfig, addLog, sendText, setConfig]);
+  }, [state, isLiveMode, isConnected, connectionStatus, calibrationRsa, providerConfig, addLog, sendText, setConfig]);
 
   // ── Self-love encouragement loop ────────────────────────────────────
   useEffect(() => {
@@ -317,11 +334,13 @@ export function useSessionOrchestrator(canvasRef: React.RefObject<HTMLCanvasElem
     handleBiometricUpdate,
     connectLive,
     disconnectLive,
+    retryLive,
     sendText,
     speak,
 
     // State
     isConnected,
+    connectionStatus,
     micVolume,
     canvasRef,
 

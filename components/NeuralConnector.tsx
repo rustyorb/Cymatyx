@@ -1,32 +1,68 @@
 import React from 'react';
 import { useSettingsStore } from '../stores/useSettingsStore.ts';
+import type { ConnectionStatus } from '../hooks/useLiveGemini.ts';
 
 interface NeuralConnectorProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   isConnected: boolean;
+  connectionStatus: ConnectionStatus;
   micVolume: number;
+  onRetry?: () => void;
 }
 
-export default function NeuralConnector({ canvasRef, isConnected, micVolume }: NeuralConnectorProps) {
+/** Status indicator config by connection state */
+const STATUS_CONFIG: Record<ConnectionStatus, { color: string; dotClass: string; label: string }> = {
+  disconnected: { color: 'border-slate-800', dotClass: 'bg-slate-600', label: 'Offline' },
+  connecting:   { color: 'border-amber-500/60', dotClass: 'bg-amber-400 animate-pulse', label: 'Connecting' },
+  connected:    { color: 'border-cyan-500/60', dotClass: 'bg-emerald-400 animate-pulse', label: 'Online' },
+  reconnecting: { color: 'border-amber-500/60', dotClass: 'bg-amber-400 animate-pulse', label: 'Reconnecting' },
+  failed:       { color: 'border-red-500/60', dotClass: 'bg-red-400', label: 'Failed' },
+};
+
+export default function NeuralConnector({
+  canvasRef,
+  isConnected,
+  connectionStatus,
+  micVolume,
+  onRetry,
+}: NeuralConnectorProps) {
   const { selfLoveEnabled } = useSettingsStore();
 
-  const borderColor = selfLoveEnabled
-    ? 'border-pink-500/60'
-    : isConnected
-      ? 'border-cyan-500/60'
-      : 'border-slate-800';
+  const status = STATUS_CONFIG[connectionStatus] || STATUS_CONFIG.disconnected;
+  const borderColor = selfLoveEnabled ? 'border-pink-500/60' : status.color;
 
   return (
     <div className={`bg-slate-900/40 rounded-2xl p-6 border ${borderColor} backdrop-blur-xl transition-colors duration-500`}>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Neural Connector</h3>
         <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+          <div className={`w-1.5 h-1.5 rounded-full ${status.dotClass}`} />
           <span className="text-[10px] text-slate-500 uppercase tracking-wider">
-            {isConnected ? 'Online' : 'Offline'}
+            {status.label}
           </span>
+          {connectionStatus === 'failed' && onRetry && (
+            <button
+              onClick={onRetry}
+              className="text-[9px] text-red-400 hover:text-red-300 uppercase tracking-wider ml-1 underline"
+            >
+              Retry
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Reconnection banner */}
+      {connectionStatus === 'reconnecting' && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 mb-4 text-[10px] text-amber-400 text-center">
+          ⟳ Reconnecting to Neural Link...
+        </div>
+      )}
+
+      {connectionStatus === 'failed' && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 mb-4 text-[10px] text-red-400 text-center">
+          Neural Link unavailable — running in offline therapeutic mode
+        </div>
+      )}
 
       {/* Waveform Canvas */}
       <div className="bg-black/40 rounded-xl border border-slate-800 p-3 mb-4">

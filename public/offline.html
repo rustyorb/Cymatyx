@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cymatyx — Offline</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #020617;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow: hidden;
+    }
+
+    /* Subtle animated resonance rings */
+    .resonance {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .resonance .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(99, 102, 241, 0.12);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse 6s ease-in-out infinite;
+    }
+
+    .ring:nth-child(1) { width: 200px; height: 200px; animation-delay: 0s; }
+    .ring:nth-child(2) { width: 340px; height: 340px; animation-delay: 1.2s; }
+    .ring:nth-child(3) { width: 480px; height: 480px; animation-delay: 2.4s; }
+    .ring:nth-child(4) { width: 620px; height: 620px; animation-delay: 3.6s; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(0.95); }
+      50%      { opacity: 0.4;  transform: translate(-50%, -50%) scale(1.05); }
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 460px;
+    }
+
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.5rem;
+      opacity: 0.7;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p {
+      font-size: 0.95rem;
+      font-weight: 300;
+      line-height: 1.65;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+    }
+
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.75rem;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 8px;
+      background: rgba(99, 102, 241, 0.08);
+      color: #a5b4fc;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .retry-btn:hover {
+      background: rgba(99, 102, 241, 0.18);
+      border-color: rgba(99, 102, 241, 0.55);
+      color: #c7d2fe;
+    }
+
+    .retry-btn:active {
+      transform: scale(0.97);
+    }
+
+    .retry-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="resonance" aria-hidden="true">
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+  </div>
+
+  <div class="content">
+    <div class="icon">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="28" stroke="#6366f1" stroke-width="1.5" opacity="0.4"/>
+        <circle cx="32" cy="32" r="18" stroke="#818cf8" stroke-width="1.5" opacity="0.6"/>
+        <circle cx="32" cy="32" r="8" fill="#6366f1" opacity="0.5"/>
+        <path d="M32 4 V14 M32 50 V60 M4 32 H14 M50 32 H60" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+      </svg>
+    </div>
+
+    <h1>You're Offline</h1>
+
+    <p>
+      Cymatyx requires an internet connection for AI-powered bio-resonance features, but your cached sessions are still available locally.
+    </p>
+
+    <button class="retry-btn" onclick="window.location.reload()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1.5 8a6.5 6.5 0 0 1 11.25-4.5M14.5 8a6.5 6.5 0 0 1-11.25 4.5"/>
+        <path d="M13.5 1v3.5H10M2.5 15v-3.5H6"/>
+      </svg>
+      Retry Connection
+    </button>
+  </div>
+
+</body>
+</html>

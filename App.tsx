@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 // Eager-load the main session page (critical path)
 import SessionPage from './pages/SessionPage.tsx';
@@ -24,6 +25,10 @@ function RouteLoader() {
 /**
  * Application root — React Router with layout wrapper.
  *
+ * Error boundaries:
+ *   - App-level boundary (in index.tsx) catches fatal render errors
+ *   - Route-level boundaries here isolate page crashes so nav still works
+ *
  * Routes:
  *   /              → Main session page (goal select → calibrate → session → summary)
  *   /session       → Alias for the main session page
@@ -36,10 +41,38 @@ export default function App() {
     <Suspense fallback={<RouteLoader />}>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<SessionPage />} />
-          <Route path="session" element={<SessionPage />} />
-          <Route path="history" element={<HistoryPage />} />
-          <Route path="history/:id" element={<SessionDetailPage />} />
+          <Route
+            index
+            element={
+              <ErrorBoundary level="route">
+                <SessionPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="session"
+            element={
+              <ErrorBoundary level="route">
+                <SessionPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="history"
+            element={
+              <ErrorBoundary level="route">
+                <HistoryPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="history/:id"
+            element={
+              <ErrorBoundary level="route">
+                <SessionDetailPage />
+              </ErrorBoundary>
+            }
+          />
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

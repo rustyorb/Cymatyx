@@ -56,6 +56,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode, entrainment source tracking), `useSettingsStore` (provider setup, self-love settings), `useGammaStore` (40Hz ISF config, panel state)
 - **Orchestration**: `useSessionOrchestrator` hook — consolidates calibration, telemetry loops, Gemini connection, canvas rendering, and gamma state reset
 - **Pages**: `pages/SessionPage.tsx` (main session flow), `pages/HistoryPage.tsx` (session list + aggregate stats, lazy-loaded), `pages/SessionDetailPage.tsx` (individual session detail with biometric charts, lazy-loaded)
+- **Error Boundaries**: Two-tier crash recovery — app-level boundary (fatal errors) + route-level boundaries (isolate page crashes, nav still works). Auto-retries chunk load failures with backoff. Factory reset clears IndexedDB/localStorage for corrupt state recovery. Global handlers catch unhandled rejections
 - **Code Splitting**: Vendor chunks (react, three.js, recharts, genai, data) + route-level lazy loading. Initial load ~210KB gzipped; three.js/recharts deferred until needed
 - **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView), panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog), and gamma module (GammaControlPanel, GammaClickTrain, GammaFlickerOverlay, EpilepsyWarning)
 
@@ -73,7 +74,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 
 ## Testing
 
-Vitest + React Testing Library with jsdom environment. 101 tests covering core logic:
+Vitest + React Testing Library with jsdom environment. 112 tests covering core logic:
 
 ```bash
 npm test              # Run all tests once
@@ -85,6 +86,7 @@ npm run test:watch    # Watch mode (re-run on file changes)
 - `tests/utils/audioUtils.test.ts` — PCM conversion (float32↔int16, base64↔ArrayBuffer, resampling) with roundtrip verification
 - `tests/services/therapeuticFallback.test.ts` — Offline rule engine (all 5 goal types, HR zone boundaries, HRV adjustments, clamping, shouldUseOfflineFallback)
 - `tests/stores/stores.test.ts` — All 4 Zustand stores (useSessionStore, useAudioStore, useGammaStore, useSettingsStore) — state mutations, array caps, merge semantics
+- `tests/components/ErrorBoundary.test.tsx` — Error boundary (error classification, crash screen rendering, retry/recovery, chunk load detection, custom fallback, onError callback)
 
 ## Quickstart
 ```bash

@@ -22,6 +22,24 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              // React core — shared by everything, cached long-term
+              'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+              // 3D engine — only used by Visualizer3D
+              'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
+              // Charts — only used by SessionDetailPage
+              'vendor-recharts': ['recharts'],
+              // State management + persistence
+              'vendor-data': ['zustand', 'dexie'],
+              // Google AI SDK
+              'vendor-genai': ['@google/genai'],
+            },
+          },
+        },
+      },
     };
 });

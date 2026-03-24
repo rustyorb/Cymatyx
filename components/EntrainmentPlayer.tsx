@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState, Suspense } from 'react';
+import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
 import { EntrainmentConfig, GoalType } from '../types.ts';
-import Visualizer3D from './Visualizer3D.tsx';
+// Lazy-load 3D visualizer to defer three.js (~800KB) until session starts
+const Visualizer3D = lazy(() => import('./Visualizer3D.tsx'));
 import GammaFlickerOverlay from './GammaFlickerOverlay.tsx';
 import GammaClickTrain from './GammaClickTrain.tsx';
 import { useGammaStore } from '../stores/useGammaStore.ts';

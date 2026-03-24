@@ -55,7 +55,8 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - **Routing**: React Router v7 — `Layout` (persistent header) + page-level routes
 - **State Management**: Zustand stores (`stores/`) — `useSessionStore` (app state, biometrics, calibration, logs), `useAudioStore` (entrainment config, volume, live mode, entrainment source tracking), `useSettingsStore` (provider setup, self-love settings), `useGammaStore` (40Hz ISF config, panel state)
 - **Orchestration**: `useSessionOrchestrator` hook — consolidates calibration, telemetry loops, Gemini connection, canvas rendering, and gamma state reset
-- **Pages**: `pages/SessionPage.tsx` (main session flow), `pages/HistoryPage.tsx` (session list + aggregate stats), `pages/SessionDetailPage.tsx` (individual session detail with biometric charts)
+- **Pages**: `pages/SessionPage.tsx` (main session flow), `pages/HistoryPage.tsx` (session list + aggregate stats, lazy-loaded), `pages/SessionDetailPage.tsx` (individual session detail with biometric charts, lazy-loaded)
+- **Code Splitting**: Vendor chunks (react, three.js, recharts, genai, data) + route-level lazy loading. Initial load ~210KB gzipped; three.js/recharts deferred until needed
 - **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView), panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog), and gamma module (GammaControlPanel, GammaClickTrain, GammaFlickerOverlay, EpilepsyWarning)
 
 ## Tech Stack

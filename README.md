@@ -74,7 +74,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 
 ## Testing
 
-Vitest + React Testing Library with jsdom environment. 112 tests covering core logic:
+Vitest + React Testing Library with jsdom environment. 163 tests covering core logic:
 
 ```bash
 npm test              # Run all tests once
@@ -87,6 +87,12 @@ npm run test:watch    # Watch mode (re-run on file changes)
 - `tests/services/therapeuticFallback.test.ts` — Offline rule engine (all 5 goal types, HR zone boundaries, HRV adjustments, clamping, shouldUseOfflineFallback)
 - `tests/stores/stores.test.ts` — All 4 Zustand stores (useSessionStore, useAudioStore, useGammaStore, useSettingsStore) — state mutations, array caps, merge semantics
 - `tests/components/ErrorBoundary.test.tsx` — Error boundary (error classification, crash screen rendering, retry/recovery, chunk load detection, custom fallback, onError callback)
+- `tests/components/GoalSelection.test.tsx` — Goal selection UI (all 5 goals, store updates, mode switching, self-love toggles, start button)
+- `tests/components/CalibrationView.test.tsx` — Calibration display (breathing phases IN/HOLD/OUT, BPM display, conditional CSS classes)
+- `tests/components/TelemetryPanel.test.tsx` — Telemetry readouts (BPM, RSA, all 4 entrainment source states with color indicators)
+- `tests/components/EpilepsyWarning.test.tsx` — Epilepsy warning modal (accept/decline callbacks, warning content, overlay rendering)
+- `tests/services/keyVault.test.ts` — Key vault (store/load round-trip, clear single/all, storage mode switching, env key lookup)
+- `tests/services/encouragementService.test.ts` — Encouragement service (API call construction, fallback on error/missing config, response parsing, array content format)
 
 ## Quickstart
 ```bash

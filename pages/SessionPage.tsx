@@ -12,6 +12,7 @@ import SummaryView from '../components/SummaryView.tsx';
 
 // Sidebar panels
 import HeartRateMonitor from '../components/HeartRateMonitor.tsx';
+import CoherenceMeter from '../components/CoherenceMeter.tsx';
 import TelemetryPanel from '../components/TelemetryPanel.tsx';
 import ProviderSetup from '../components/ProviderSetup.tsx';
 import NeuralConnector from '../components/NeuralConnector.tsx';
@@ -65,6 +66,9 @@ export default function SessionPage() {
           isActive={state !== AppState.IDLE && state !== AppState.SUMMARY}
           mode={state === AppState.CALIBRATING ? 'calibration' : 'monitoring'}
         />
+        {(state === AppState.SESSION_ACTIVE || state === AppState.CALIBRATING) && (
+          <CoherenceMeter />
+        )}
         <TelemetryPanel />
       </div>
 

@@ -1,7 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { AppState } from '../types.ts';
 import { useSessionStore } from '../stores/useSessionStore.ts';
 import { getAllSessions, type SessionRecord } from '../services/sessionDb.ts';
+
+/** Compute session coherence from HRV timeseries */
+function computeSessionCoherence(hrvValues: number[]): { avg: number; peak: number; highPct: number } {
+  if (hrvValues.length < 10) return { avg: 0, peak: 0, highPct: 0 };
+
+  const scores: number[] = [];
+  for (let i = 10; i <= hrvValues.length; i++) {
+    const window = hrvValues.slice(Math.max(0, i - 30), i);
+    const n = window.length;
+    const mean = window.reduce((a, b) => a + b, 0) / n;
+    if (mean === 0) { scores.push(0); continue; }
+    const variance = window.reduce((a, b) => a + (b - mean) ** 2, 0) / n;
+    const std = Math.sqrt(variance);
+    const cv = std / mean;
+    const cvScore = Math.max(0, Math.min(50, (1 - cv / 0.5) * 50));
+    let bestAC = -1;
+    for (let lag = 4; lag <= 8 && lag < n; lag++) {
+      let num = 0, count = 0;
+      for (let j = 0; j < n - lag; j++) {
+        num += (window[j] - mean) * (window[j + lag] - mean);
+        count++;
+      }
+      if (count > 0 && variance > 0) bestAC = Math.max(bestAC, num / (count * variance));
+    }
+    const acScore = Math.max(0, Math.min(50, (bestAC + 0.2) * 50 / 1.2));
+    scores.push(Math.round(Math.max(0, Math.min(100, cvScore + acScore))));
+  }
+
+  const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const peak = scores.length > 0 ? Math.max(...scores) : 0;
+  const highCount = scores.filter((s) => s >= 66).length;
+  const highPct = scores.length > 0 ? Math.round((highCount / scores.length) * 100) : 0;
+  return { avg, peak, highPct };
+}
 
 /** Format seconds to MM:SS */
 function fmtDuration(s: number): string {
@@ -50,6 +84,12 @@ export default function SummaryView() {
       : lastSession?.maxBpm ?? 0;
   const sampleCount = samples.length || (lastSession?.biometrics.length ?? 0);
 
+  // Coherence stats
+  const coherenceStats = useMemo(() => {
+    const hrvValues = samples.map((s) => s.hrv).filter((h) => h > 0);
+    return computeSessionCoherence(hrvValues);
+  }, [samples]);
+
   return (
     <div className="h-full bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-800 flex flex-col items-center justify-center text-center">
       <h2 className="text-2xl text-white font-bold mb-2 tracking-tighter">
@@ -68,6 +108,8 @@ export default function SummaryView() {
         <StatCard label="BPM Range" value={`${minBpm}–${maxBpm}`} />
         <StatCard label="Samples" value={sampleCount.toString()} />
         <StatCard label="Vagal Tone" value={`${Math.round(calibrationRsa)}`} />
+        <StatCard label="Coherence" value={`${coherenceStats.avg}`} />
+        <StatCard label="Peak Coherence" value={`${coherenceStats.peak}`} />
       </div>
 
       <button

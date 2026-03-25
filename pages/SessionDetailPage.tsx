@@ -80,8 +80,8 @@ export default function SessionDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500 text-sm animate-pulse">Loading session...</div>
+      <div className="flex items-center justify-center h-64" role="status">
+        <div className="text-slate-500 text-sm animate-pulse" aria-live="polite">Loading session...</div>
       </div>
     );
   }
@@ -89,13 +89,13 @@ export default function SessionDetailPage() {
   if (!session) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
-        <div className="text-4xl mb-4">❌</div>
+        <div className="text-4xl mb-4" aria-hidden="true">❌</div>
         <h2 className="text-xl text-white font-bold mb-2">Session Not Found</h2>
         <button
           onClick={() => navigate('/history')}
           className="mt-4 px-6 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors text-xs uppercase tracking-widest"
         >
-          ← Back to History
+          <span aria-hidden="true">← </span>Back to History
         </button>
       </div>
     );
@@ -140,7 +140,7 @@ export default function SessionDetailPage() {
           onClick={() => navigate('/history')}
           className="text-slate-500 hover:text-slate-300 transition-colors text-xs uppercase tracking-widest"
         >
-          ← History
+          <span aria-hidden="true">← </span>History
         </button>
         <div className="flex gap-2">
           <button
@@ -151,6 +151,7 @@ export default function SessionDetailPage() {
           </button>
           <button
             onClick={handleDelete}
+            aria-label="Delete this session"
             className="px-4 py-1.5 bg-red-500/10 text-red-400/60 rounded-lg hover:bg-red-500/20 hover:text-red-400 transition-colors text-[10px] uppercase tracking-widest"
           >
             Delete

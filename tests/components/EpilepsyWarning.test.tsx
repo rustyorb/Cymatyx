@@ -35,4 +35,26 @@ describe('EpilepsyWarning', () => {
     fireEvent.click(acceptBtn);
     expect(onAccept).toHaveBeenCalledOnce();
   });
+
+  // ── Accessibility tests ──────────────────────────────────────────
+  it('has role="dialog" and aria-modal', () => {
+    render(<EpilepsyWarning onAccept={vi.fn()} onDecline={vi.fn()} />);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeDefined();
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.getAttribute('aria-labelledby')).toBe('epilepsy-title');
+  });
+
+  it('calls onDecline when Escape key is pressed', () => {
+    const onDecline = vi.fn();
+    render(<EpilepsyWarning onAccept={vi.fn()} onDecline={onDecline} />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onDecline).toHaveBeenCalledOnce();
+  });
+
+  it('has warning SVG marked aria-hidden', () => {
+    const { container } = render(<EpilepsyWarning onAccept={vi.fn()} onDecline={vi.fn()} />);
+    const svg = container.querySelector('svg');
+    expect(svg?.getAttribute('aria-hidden')).toBe('true');
+  });
 });

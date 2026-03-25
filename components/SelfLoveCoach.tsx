@@ -19,6 +19,9 @@ export default function SelfLoveCoach() {
           <span className="text-slate-400 text-xs">Enable</span>
           <button
             onClick={() => setSelfLoveEnabled(!selfLoveEnabled)}
+            role="switch"
+            aria-checked={selfLoveEnabled}
+            aria-label="Enable Self-Love Coach"
             className={`w-10 h-5 rounded-full transition-colors duration-300 relative ${
               selfLoveEnabled ? 'bg-pink-500' : 'bg-slate-700'
             }`}
@@ -35,6 +38,9 @@ export default function SelfLoveCoach() {
           <span className="text-slate-400 text-xs">TTS Voice</span>
           <button
             onClick={() => setSelfLoveTtsEnabled(!selfLoveTtsEnabled)}
+            role="switch"
+            aria-checked={selfLoveTtsEnabled}
+            aria-label="Enable TTS Voice"
             className={`w-10 h-5 rounded-full transition-colors duration-300 relative ${
               selfLoveTtsEnabled ? 'bg-pink-500' : 'bg-slate-700'
             }`}
@@ -49,7 +55,7 @@ export default function SelfLoveCoach() {
       </div>
 
       {/* Message List */}
-      <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+      <div role="log" aria-live="polite" aria-label="Encouragement messages" className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
         {selfLoveLines.length === 0 ? (
           <p className="text-slate-600 text-xs italic text-center py-4">
             {selfLoveEnabled ? 'Waiting for encouragement...' : 'Enable to receive affirmations'}
@@ -60,7 +66,7 @@ export default function SelfLoveCoach() {
               key={i}
               className="bg-black/40 rounded-xl border border-pink-500/20 p-3 text-pink-300 text-xs leading-relaxed"
             >
-              💗 {line}
+              <span aria-hidden="true">💗</span> {line}
             </div>
           ))
         )}

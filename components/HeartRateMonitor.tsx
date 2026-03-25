@@ -126,17 +126,17 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
   const trackInfo = TRACK_STATUS[trackStatus];
 
   return (
-    <div className={`relative w-full bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-md shadow-2xl overflow-hidden flex flex-col transition-all duration-500 ${showDebug ? 'p-6 gap-4' : 'p-4'}`}>
+    <div role="region" aria-label="Heart Rate Monitor" className={`relative w-full bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-md shadow-2xl overflow-hidden flex flex-col transition-all duration-500 ${showDebug ? 'p-6 gap-4' : 'p-4'}`}>
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-cyan-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${bpm > 0 ? 'bg-cyan-500 animate-pulse shadow-[0_0_8px_cyan]' : 'bg-slate-700'}`}></span>
+            <span aria-hidden="true" className={`w-2 h-2 rounded-full ${bpm > 0 ? 'bg-cyan-500 animate-pulse shadow-[0_0_8px_cyan]' : 'bg-slate-700'}`}></span>
             rPPG Core v5.0
         </h3>
         <div className="flex items-center gap-3">
           <span className={`text-[8px] font-mono uppercase tracking-wider ${trackInfo.color}`}>
             {faceDetected ? '◉' : '○'} {trackInfo.label}
           </span>
-          <button onClick={() => setShowDebug(!showDebug)} className="text-[10px] text-slate-500 uppercase tracking-widest hover:text-cyan-400 transition-colors">
+          <button onClick={() => setShowDebug(!showDebug)} aria-label={showDebug ? 'Switch to compact view' : 'Show debug panel'} aria-expanded={showDebug} className="text-[10px] text-slate-500 uppercase tracking-widest hover:text-cyan-400 transition-colors">
               {showDebug ? 'COMPACT' : 'DEBUG'}
           </button>
         </div>
@@ -150,9 +150,9 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
             <Line type="monotone" dataKey="v" stroke="#22d3ee" strokeWidth={1.5} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
-        <div className="absolute top-2 left-3 flex flex-col">
-            <span className="text-2xl font-black text-white tabular-nums">{bpm ? Math.round(bpm) : '--'}</span>
-            <span className="text-[8px] text-slate-500 uppercase tracking-widest -mt-1">BPM</span>
+        <div aria-live="polite" className="absolute top-2 left-3 flex flex-col">
+            <span aria-label={`Heart rate: ${bpm ? Math.round(bpm) : 'no data'} beats per minute`} className="text-2xl font-black text-white tabular-nums">{bpm ? Math.round(bpm) : '--'}</span>
+            <span aria-hidden="true" className="text-[8px] text-slate-500 uppercase tracking-widest -mt-1">BPM</span>
         </div>
         <div className="absolute bottom-2 left-3 flex flex-col">
             <span className="text-lg font-bold text-violet-400 tabular-nums">{hrv > 0 ? hrv.toFixed(1) : '--'}</span>
@@ -168,7 +168,7 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
 
       <div className={`grid grid-cols-2 gap-4 transition-all duration-500 overflow-hidden ${showDebug ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0'}`}>
         <div className="aspect-video bg-black rounded-lg border border-slate-800 relative overflow-hidden">
-            <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale contrast-125 opacity-40" />
+            <video ref={videoRef} autoPlay muted playsInline aria-label="Camera feed for heart rate monitoring" className="w-full h-full object-cover grayscale contrast-125 opacity-40" />
             <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="hidden" />
             {/* Dynamic ROI overlay — maps canvas coords to video preview */}
             <div
@@ -180,7 +180,7 @@ const HeartRateMonitor: React.FC<Props> = ({ onBiometricUpdate, isActive, mode =
                 height: `${(roi.height / CANVAS_H) * 100}%`,
               }}
             >
-                <div className={`absolute -top-3 left-0 text-[6px] font-mono uppercase ${faceDetected ? 'text-emerald-500' : 'text-cyan-500'}`}>
+                <div aria-hidden="true" className={`absolute -top-3 left-0 text-[6px] font-mono uppercase ${faceDetected ? 'text-emerald-500' : 'text-cyan-500'}`}>
                   {faceDetected ? 'FACE_ROI' : 'FALLBACK_ROI'}
                 </div>
             </div>

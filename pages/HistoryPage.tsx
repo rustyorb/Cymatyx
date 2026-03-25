@@ -52,8 +52,8 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500 text-sm animate-pulse">Loading sessions...</div>
+      <div className="flex items-center justify-center h-64" role="status">
+        <div className="text-slate-500 text-sm animate-pulse" aria-live="polite">Loading sessions...</div>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function HistoryPage() {
   if (sessions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
-        <div className="text-4xl mb-4">🧠</div>
+        <div className="text-4xl mb-4" aria-hidden="true">🧠</div>
         <h2 className="text-xl text-white font-bold mb-2">No Sessions Yet</h2>
         <p className="text-slate-500 text-sm max-w-xs">
           Complete a bio-resonance session to see your history and trends here.
@@ -118,8 +118,12 @@ export default function HistoryPage() {
         {sessions.map((session) => (
           <div
             key={session.id}
-            className="bg-slate-900/50 rounded-2xl p-5 border border-slate-800 hover:border-cyan-800/50 transition-colors cursor-pointer"
+            role="link"
+            tabIndex={0}
+            aria-label={`Session #${session.id}: ${goalLabels[session.goal] || session.goal}, ${fmtDate(session.startedAt)}`}
+            className="bg-slate-900/50 rounded-2xl p-5 border border-slate-800 hover:border-cyan-800/50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
             onClick={() => session.id && navigate(`/history/${session.id}`)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); session.id && navigate(`/history/${session.id}`); } }}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -148,6 +152,7 @@ export default function HistoryPage() {
               <button
                 onClick={(e) => { e.stopPropagation(); session.id && handleDelete(session.id); }}
                 className="text-[10px] text-red-400/50 hover:text-red-400 transition-colors uppercase tracking-widest"
+                aria-label={`Delete session #${session.id}`}
               >
                 Delete
               </button>

@@ -19,7 +19,7 @@ export default function KernelLog() {
   return (
     <div className="bg-slate-900/40 rounded-2xl p-6 border border-slate-800 backdrop-blur-xl">
       <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">Kernel Log</h3>
-      <div className="bg-black/40 rounded-xl border border-slate-800 p-4 max-h-64 overflow-y-auto font-mono text-[10px] space-y-1 scrollbar-thin scrollbar-thumb-slate-700">
+      <div role="log" aria-live="polite" aria-label="System kernel log" className="bg-black/40 rounded-xl border border-slate-800 p-4 max-h-64 overflow-y-auto font-mono text-[10px] space-y-1 scrollbar-thin scrollbar-thumb-slate-700">
         {systemLog.length === 0 ? (
           <p className="text-slate-600 italic text-center py-4">No log entries</p>
         ) : (

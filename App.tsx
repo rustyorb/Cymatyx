@@ -13,10 +13,10 @@ const SessionDetailPage = lazy(() => import('./pages/SessionDetailPage.tsx'));
 /** Minimal loading fallback for lazy routes */
 function RouteLoader() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#888' }}>
+    <div role="status" aria-label="Loading page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#888' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⟳</div>
-        <div>Loading…</div>
+        <div aria-hidden="true" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⟳</div>
+        <div aria-live="polite">Loading…</div>
       </div>
     </div>
   );

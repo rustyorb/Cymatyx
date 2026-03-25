@@ -50,10 +50,12 @@ export default function GammaControlPanel() {
         {/* Header — always visible */}
         <button
           onClick={() => setPanelExpanded(!panelExpanded)}
+          aria-expanded={panelExpanded}
+          aria-controls="gamma-panel-content"
           className="w-full px-5 py-3 flex items-center justify-between hover:bg-purple-900/10 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${gamma.isfEnabled ? 'bg-purple-400 animate-pulse' : 'bg-slate-600'}`} />
+            <div aria-hidden="true" className={`w-2 h-2 rounded-full ${gamma.isfEnabled ? 'bg-purple-400 animate-pulse' : 'bg-slate-600'}`} />
             <span className="text-[11px] font-bold uppercase tracking-widest text-purple-300">
               40Hz Gamma ISF
             </span>
@@ -64,6 +66,7 @@ export default function GammaControlPanel() {
             )}
           </div>
           <svg
+            aria-hidden="true"
             className={`w-4 h-4 text-slate-500 transition-transform ${panelExpanded ? 'rotate-180' : ''}`}
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
           >
@@ -73,7 +76,7 @@ export default function GammaControlPanel() {
 
         {/* Controls — collapsible */}
         {panelExpanded && (
-          <div className="px-5 pb-5 space-y-4 border-t border-purple-900/30">
+          <div id="gamma-panel-content" className="px-5 pb-5 space-y-4 border-t border-purple-900/30">
             {/* ISF Master Toggle */}
             <div className="flex items-center justify-between pt-4">
               <div>
@@ -82,6 +85,9 @@ export default function GammaControlPanel() {
               </div>
               <button
                 onClick={handleISFToggle}
+                role="switch"
+                aria-checked={gamma.isfEnabled}
+                aria-label="ISF Mode toggle"
                 className={`relative w-12 h-6 rounded-full transition-colors ${
                   gamma.isfEnabled ? 'bg-purple-600' : 'bg-slate-700'
                 }`}
@@ -110,6 +116,7 @@ export default function GammaControlPanel() {
                 value={gamma.clickTrainVolume}
                 onChange={(e) => setGamma({ clickTrainVolume: parseFloat(e.target.value) })}
                 className="w-full accent-purple-500 h-1"
+                aria-label="Click train volume"
                 disabled={!gamma.isfEnabled}
               />
             </div>
@@ -132,6 +139,7 @@ export default function GammaControlPanel() {
                 value={gamma.flickerIntensity}
                 onChange={(e) => setGamma({ flickerIntensity: parseFloat(e.target.value) })}
                 className="w-full accent-purple-500 h-1"
+                aria-label="Flicker intensity"
                 disabled={!gamma.isfEnabled || !gamma.epilepsyWarningAcknowledged}
               />
               {!gamma.epilepsyWarningAcknowledged && gamma.isfEnabled && (
@@ -157,6 +165,7 @@ export default function GammaControlPanel() {
                 value={gamma.flickerDutyCycle}
                 onChange={(e) => setGamma({ flickerDutyCycle: parseFloat(e.target.value) })}
                 className="w-full accent-purple-500 h-1"
+                aria-label="Duty cycle"
                 disabled={!gamma.isfEnabled}
               />
               <p className="text-[9px] text-slate-600">

@@ -14,8 +14,9 @@ export default function SessionView() {
     <div className="h-full flex flex-col gap-6">
       <EntrainmentPlayer config={config} isPlaying={true} volume={volume} />
       <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-800 flex items-center gap-8">
-        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest shrink-0">Main Amplitude</span>
+        <label htmlFor="main-amplitude" className="text-[10px] font-bold text-slate-600 uppercase tracking-widest shrink-0">Main Amplitude</label>
         <input
+          id="main-amplitude"
           type="range"
           min="0"
           max="1"

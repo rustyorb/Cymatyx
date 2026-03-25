@@ -60,6 +60,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - **Error Boundaries**: Two-tier crash recovery — app-level boundary (fatal errors) + route-level boundaries (isolate page crashes, nav still works). Auto-retries chunk load failures with backoff. Factory reset clears IndexedDB/localStorage for corrupt state recovery. Global handlers catch unhandled rejections
 - **Code Splitting**: Vendor chunks (react, three.js, recharts, genai, data) + route-level lazy loading. Initial load ~210KB gzipped; three.js/recharts deferred until needed
 - **PWA**: Installable Progressive Web App via `vite-plugin-pwa` + Workbox. Auto-updating service worker precaches app shell; runtime caching for Google Fonts, Tailwind CDN, and esm.sh vendor modules. Offline fallback page. Add-to-home-screen on mobile with themed splash screen
+- **Accessibility**: Skip navigation, ARIA landmarks, `role="dialog"` + focus trap on modals, `role="switch"` on toggle buttons, `aria-live` regions for dynamic content (BPM, HRV, logs), keyboard navigation on session list, `prefers-reduced-motion` support disabling 40Hz flicker, labeled form inputs, `aria-hidden` on decorative elements
 - **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView), panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog), and gamma module (GammaControlPanel, GammaClickTrain, GammaFlickerOverlay, EpilepsyWarning)
 
 ## Tech Stack
@@ -77,7 +78,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 
 ## Testing
 
-Vitest + React Testing Library with jsdom environment. 174 tests covering core logic:
+Vitest + React Testing Library with jsdom environment. 177 tests covering core logic:
 
 ```bash
 npm test              # Run all tests once
@@ -94,7 +95,7 @@ npm run test:watch    # Watch mode (re-run on file changes)
 - `tests/components/CalibrationView.test.tsx` — Calibration display (BreathingGuide integration, BPM display, ambient pulse)
 - `tests/components/BreathingGuide.test.tsx` — Animated breathing circle (phase labels, coherence indicator, SVG ring, haptic feedback, compact mode)
 - `tests/components/TelemetryPanel.test.tsx` — Telemetry readouts (BPM, RSA, all 4 entrainment source states with color indicators)
-- `tests/components/EpilepsyWarning.test.tsx` — Epilepsy warning modal (accept/decline callbacks, warning content, overlay rendering)
+- `tests/components/EpilepsyWarning.test.tsx` — Epilepsy warning modal (accept/decline callbacks, warning content, overlay rendering, ARIA dialog role, focus trap, Escape key dismiss)
 - `tests/services/keyVault.test.ts` — Key vault (store/load round-trip, clear single/all, storage mode switching, env key lookup)
 - `tests/services/encouragementService.test.ts` — Encouragement service (API call construction, fallback on error/missing config, response parsing, array content format)
 

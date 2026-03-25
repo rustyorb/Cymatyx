@@ -30,8 +30,19 @@ export default function GammaFlickerOverlay({ isActive, intensity, dutyCycle, co
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // Respect prefers-reduced-motion
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
   useEffect(() => {
-    if (!isActive) {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!isActive || prefersReducedMotion) {
       setIsOn(false);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       return;
@@ -54,12 +65,13 @@ export default function GammaFlickerOverlay({ isActive, intensity, dutyCycle, co
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [isActive, dutyCycle]);
+  }, [isActive, dutyCycle, prefersReducedMotion]);
 
-  if (!isActive || !isOn) return null;
+  if (!isActive || !isOn || prefersReducedMotion) return null;
 
   return (
     <div
+      aria-hidden="true"
       className="absolute inset-0 z-40 pointer-events-none"
       style={{
         backgroundColor: color,

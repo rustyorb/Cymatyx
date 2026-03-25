@@ -156,9 +156,9 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
   const flickerActive = isfActive && gamma.epilepsyWarningAcknowledged && gamma.flickerIntensity > 0;
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] relative overflow-hidden rounded-3xl bg-slate-950 shadow-2xl border border-slate-800 group">
+    <div role="region" aria-label="Entrainment audio player" className="flex flex-col items-center justify-center w-full h-full min-h-[400px] relative overflow-hidden rounded-3xl bg-slate-950 shadow-2xl border border-slate-800 group">
         {/* 3D particle tunnel background */}
-        <div className="absolute inset-0 z-0">
+        <div aria-hidden="true" className="absolute inset-0 z-0">
              <Suspense fallback={<div className="w-full h-full bg-slate-900" />}>
                 <Visualizer3D speed={config.visualPulseRate} color={config.primaryColor} />
              </Suspense>
@@ -182,7 +182,7 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
         <div className="absolute inset-0 z-1 bg-[radial-gradient(transparent,rgba(15,23,42,0.8))]" />
 
         {/* Pan position indicator */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
+        <div aria-hidden="true" className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
              <div className="w-[80%] h-[1px] bg-white/10 relative">
                  <div 
                     className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_15px_white] transition-transform duration-75"
@@ -205,7 +205,7 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
               primaryColor={config.primaryColor}
               compact
             />
-            <h2 className="mt-4 text-5xl font-thin tracking-tighter text-white tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+            <h2 aria-live="polite" className="mt-4 text-5xl font-thin tracking-tighter text-white tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
                {config.binauralBeatFreq.toFixed(1)}<span className="text-xl opacity-50 ml-1">Hz</span>
             </h2>
             <p className="text-white/70 text-[10px] uppercase tracking-[0.3em] mt-2 font-bold">

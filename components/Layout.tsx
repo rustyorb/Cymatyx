@@ -28,13 +28,17 @@ export default function Layout() {
   return (
     <HeaderActionsContext.Provider value={{ headerActions, setHeaderActions }}>
       <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans selection:bg-cyan-500/30">
+        {/* Skip navigation link */}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-cyan-600 focus:text-white focus:rounded-lg focus:text-sm">
+          Skip to main content
+        </a>
         {/* ── Header ──────────────────────────────────────────────── */}
         <header className="px-6 py-4 border-b border-slate-900 flex justify-between items-center bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
           <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity" aria-label="Cymatyx Home">
               <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shadow-2xl overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent"></div>
-                <svg className="w-6 h-6 text-cyan-400 relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg aria-hidden="true" className="w-6 h-6 text-cyan-400 relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 12s2.5-7 5-7 5 7 5 7 2.5-7 5-7" />
                   <path d="M4 12s2.5 7 5 7 5-7 5-7 2.5 7 5 7" opacity="0.3" />
                 </svg>
@@ -46,7 +50,7 @@ export default function Layout() {
             </Link>
 
             {/* ── Nav Links ─────────────────────────────────────── */}
-            <nav className="hidden sm:flex items-center gap-1 ml-6">
+            <nav aria-label="Main navigation" className="hidden sm:flex items-center gap-1 ml-6">
               <NavLink to="/" active={location.pathname === '/' || location.pathname === '/session'}>
                 Session
               </NavLink>
@@ -61,7 +65,7 @@ export default function Layout() {
         </header>
 
         {/* ── Page Content ────────────────────────────────────────── */}
-        <main className="flex-grow p-4 md:p-6 max-w-[1600px] mx-auto w-full">
+        <main id="main-content" className="flex-grow p-4 md:p-6 max-w-[1600px] mx-auto w-full">
           <Outlet />
         </main>
       </div>
@@ -74,6 +78,7 @@ function NavLink({ to, active, children }: { to: string; active: boolean; childr
   return (
     <Link
       to={to}
+      aria-current={active ? 'page' : undefined}
       className={`px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-[0.15em] transition-colors ${
         active
           ? 'bg-slate-800 text-cyan-400'

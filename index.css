@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Custom theme configuration (migrated from CDN tailwind.config) */
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-slate-950: #020617;
+}
+
+/* Base styles */
+body {
+  background-color: #020617;
+  color: #f8fafc;
+  margin: 0;
+  overflow-x: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Custom utility for scrollbar hiding used in App.tsx */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Styled scrollbar for other containers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+#root {
+  min-height: 100vh;
+}

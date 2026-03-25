@@ -59,12 +59,14 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - **Pages**: `pages/SessionPage.tsx` (main session flow), `pages/HistoryPage.tsx` (session list + aggregate stats, lazy-loaded), `pages/SessionDetailPage.tsx` (individual session detail with biometric charts, lazy-loaded)
 - **Error Boundaries**: Two-tier crash recovery — app-level boundary (fatal errors) + route-level boundaries (isolate page crashes, nav still works). Auto-retries chunk load failures with backoff. Factory reset clears IndexedDB/localStorage for corrupt state recovery. Global handlers catch unhandled rejections
 - **Code Splitting**: Vendor chunks (react, three.js, recharts, genai, data) + route-level lazy loading. Initial load ~210KB gzipped; three.js/recharts deferred until needed
-- **PWA**: Installable Progressive Web App via `vite-plugin-pwa` + Workbox. Auto-updating service worker precaches app shell; runtime caching for Google Fonts, Tailwind CDN, and esm.sh vendor modules. Offline fallback page. Add-to-home-screen on mobile with themed splash screen
+- **Styling**: Tailwind CSS v4 via `@tailwindcss/vite` plugin — compiled at build time, tree-shaken, zero runtime overhead. Custom theme in `index.css`
+- **PWA**: Installable Progressive Web App via `vite-plugin-pwa` + Workbox. Auto-updating service worker precaches app shell; runtime caching for Google Fonts. Fully offline-capable. Add-to-home-screen on mobile with themed splash screen
 - **Accessibility**: Skip navigation, ARIA landmarks, `role="dialog"` + focus trap on modals, `role="switch"` on toggle buttons, `aria-live` regions for dynamic content (BPM, HRV, logs), keyboard navigation on session list, `prefers-reduced-motion` support disabling 40Hz flicker, labeled form inputs, `aria-hidden` on decorative elements
 - **Components**: Focused single-responsibility components in `components/` — views (GoalSelection, CalibrationView, SessionView, SummaryView), panels (TelemetryPanel, NeuralConnector, SelfLoveCoach, KernelLog), and gamma module (GammaControlPanel, GammaClickTrain, GammaFlickerOverlay, EpilepsyWarning)
 
 ## Tech Stack
 - React 18 + TypeScript + Vite
+- Tailwind CSS v4 (build-time via @tailwindcss/vite)
 - React Router v7 (client-side routing)
 - Zustand (state management)
 - MediaPipe Tasks Vision (face tracking)

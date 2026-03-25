@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import CalibrationView from '../../components/CalibrationView';
 import { useSessionStore } from '../../stores/useSessionStore';
@@ -9,29 +9,45 @@ describe('CalibrationView', () => {
       calibrationStep: '',
       biometrics: { bpm: 0, hrv: 0, signalQuality: 0, timestamp: 0 },
     });
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 0);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    vi.spyOn(performance, 'now').mockReturnValue(0);
   });
 
-  it('shows "Calibrating" when step is empty', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows "Calibrating" and READY state when step is empty', () => {
     render(<CalibrationView />);
     expect(screen.getByText('Calibrating')).toBeDefined();
+    expect(screen.getByText('READY')).toBeDefined();
   });
 
-  it('shows "Breath In" when step is IN', () => {
+  it('renders BreathingGuide when step is IN', () => {
     useSessionStore.setState({ calibrationStep: 'IN' });
-    render(<CalibrationView />);
-    expect(screen.getByText('Breath In')).toBeDefined();
+    const { container } = render(<CalibrationView />);
+    // BreathingGuide renders a timer role element
+    expect(screen.getByRole('timer')).toBeDefined();
+    // Should have SVG progress ring
+    expect(container.querySelectorAll('circle').length).toBe(2);
   });
 
-  it('shows "Retain" when step is HOLD', () => {
+  it('renders BreathingGuide when step is HOLD', () => {
     useSessionStore.setState({ calibrationStep: 'HOLD' });
     render(<CalibrationView />);
-    expect(screen.getByText('Retain')).toBeDefined();
+    expect(screen.getByRole('timer')).toBeDefined();
   });
 
-  it('shows "Release" when step is OUT', () => {
+  it('renders BreathingGuide when step is OUT', () => {
     useSessionStore.setState({ calibrationStep: 'OUT' });
     render(<CalibrationView />);
-    expect(screen.getByText('Release')).toBeDefined();
+    expect(screen.getByRole('timer')).toBeDefined();
+  });
+
+  it('does not render BreathingGuide when step is empty', () => {
+    render(<CalibrationView />);
+    expect(screen.queryByRole('timer')).toBeNull();
   });
 
   it('displays current BPM rounded', () => {
@@ -48,19 +64,11 @@ describe('CalibrationView', () => {
     expect(screen.getByText(/0/)).toBeDefined();
   });
 
-  it('applies cyan border class when step is IN', () => {
+  it('shows ambient background pulse during calibration', () => {
     useSessionStore.setState({ calibrationStep: 'IN' });
     const { container } = render(<CalibrationView />);
-    const circle = container.querySelector('.rounded-full');
-    expect(circle?.className).toContain('border-cyan-400');
-    expect(circle?.className).toContain('scale-110');
-  });
-
-  it('applies scale-90 class when step is OUT', () => {
-    useSessionStore.setState({ calibrationStep: 'OUT' });
-    const { container } = render(<CalibrationView />);
-    const circle = container.querySelector('.rounded-full');
-    expect(circle?.className).toContain('scale-90');
-    expect(circle?.className).toContain('border-slate-700');
+    // Check for the pulse animation element
+    const pulseEl = container.querySelector('[style*="calibPulse"]');
+    expect(pulseEl).toBeTruthy();
   });
 });

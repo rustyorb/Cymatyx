@@ -4,6 +4,7 @@ import { EntrainmentConfig, GoalType } from '../types.ts';
 const Visualizer3D = lazy(() => import('./Visualizer3D.tsx'));
 import GammaFlickerOverlay from './GammaFlickerOverlay.tsx';
 import GammaClickTrain from './GammaClickTrain.tsx';
+import BreathingGuide from './BreathingGuide.tsx';
 import { useGammaStore } from '../stores/useGammaStore.ts';
 import { useSessionStore } from '../stores/useSessionStore.ts';
 
@@ -31,6 +32,7 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
   // Gamma ISF state
   const { gamma } = useGammaStore();
   const goal = useSessionStore((s) => s.goal);
+  const biometrics = useSessionStore((s) => s.biometrics);
   const isNeuroRegen = goal === GoalType.NEURO_REGEN;
 
   useEffect(() => {
@@ -193,24 +195,17 @@ const EntrainmentPlayer: React.FC<Props> = ({ config, isPlaying, volume }) => {
              </div>
         </div>
 
-        {/* Center display */}
-        <div className="absolute z-30 flex flex-col items-center text-center pointer-events-none mix-blend-screen">
-            <div 
-                className="w-16 h-16 rounded-full border-2 border-white/50 flex items-center justify-center backdrop-blur-sm"
-                style={{
-                     animation: `breathe ${config.breathingRate}s infinite ease-in-out`,
-                     boxShadow: `0 0 ${visualPhase * 50}px ${config.primaryColor}`
-                }}
-            >
-                <div className="w-2 h-2 bg-white rounded-full" />
-            </div>
-            <style>{`
-                @keyframes breathe {
-                    0%, 100% { transform: scale(1); opacity: 0.8; }
-                    50% { transform: scale(1.5); opacity: 1; }
-                }
-            `}</style>
-            <h2 className="mt-8 text-5xl font-thin tracking-tighter text-white tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+        {/* Center display — Breathing Guide + Hz readout */}
+        <div className="absolute z-30 flex flex-col items-center text-center pointer-events-none">
+            <BreathingGuide
+              breathingRate={config.breathingRate}
+              isActive={isPlaying}
+              hrv={biometrics.hrv}
+              rsa={biometrics.rsa}
+              primaryColor={config.primaryColor}
+              compact
+            />
+            <h2 className="mt-4 text-5xl font-thin tracking-tighter text-white tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
                {config.binauralBeatFreq.toFixed(1)}<span className="text-xl opacity-50 ml-1">Hz</span>
             </h2>
             <p className="text-white/70 text-[10px] uppercase tracking-[0.3em] mt-2 font-bold">

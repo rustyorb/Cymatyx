@@ -46,6 +46,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 - **Rule-based therapeutic engine** (`services/therapeuticFallback.ts`) — generates entrainment parameters from neuroscience research without any AI provider
 - HR zone classification (resting → low → moderate → elevated → high) drives real-time parameter adaptation
 - Goal-specific presets with HR zone offsets: beat frequency, carrier tone, breathing rate, visual color, spatial panning
+- **Animated breathing guide** — expanding/contracting circle with 4-7-8 ratio, SVG progress ring, phase countdown, coherence indicator (HRV+RSA), and mobile haptic feedback
 - HRV-based refinement: low HRV (autonomic stress) deepens calming effect; high HRV allows more aggressive targeting
 - **Automatic activation** when: no AI provider configured, API call fails, Gemini Live disconnects mid-session, or Self-Love goal selected
 - **Entrainment source indicator** in Telemetry Panel shows current engine: AI Provider, Offline Rules, Gemini Live, or Initializing
@@ -76,7 +77,7 @@ Closed-loop bio-resonance app: webcam rPPG heart rate monitoring → AI-driven b
 
 ## Testing
 
-Vitest + React Testing Library with jsdom environment. 163 tests covering core logic:
+Vitest + React Testing Library with jsdom environment. 174 tests covering core logic:
 
 ```bash
 npm test              # Run all tests once
@@ -90,7 +91,8 @@ npm run test:watch    # Watch mode (re-run on file changes)
 - `tests/stores/stores.test.ts` — All 4 Zustand stores (useSessionStore, useAudioStore, useGammaStore, useSettingsStore) — state mutations, array caps, merge semantics
 - `tests/components/ErrorBoundary.test.tsx` — Error boundary (error classification, crash screen rendering, retry/recovery, chunk load detection, custom fallback, onError callback)
 - `tests/components/GoalSelection.test.tsx` — Goal selection UI (all 5 goals, store updates, mode switching, self-love toggles, start button)
-- `tests/components/CalibrationView.test.tsx` — Calibration display (breathing phases IN/HOLD/OUT, BPM display, conditional CSS classes)
+- `tests/components/CalibrationView.test.tsx` — Calibration display (BreathingGuide integration, BPM display, ambient pulse)
+- `tests/components/BreathingGuide.test.tsx` — Animated breathing circle (phase labels, coherence indicator, SVG ring, haptic feedback, compact mode)
 - `tests/components/TelemetryPanel.test.tsx` — Telemetry readouts (BPM, RSA, all 4 entrainment source states with color indicators)
 - `tests/components/EpilepsyWarning.test.tsx` — Epilepsy warning modal (accept/decline callbacks, warning content, overlay rendering)
 - `tests/services/keyVault.test.ts` — Key vault (store/load round-trip, clear single/all, storage mode switching, env key lookup)

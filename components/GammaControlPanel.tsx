@@ -26,7 +26,13 @@ export default function GammaControlPanel() {
   };
 
   const handleWarningAccept = () => {
-    setGamma({ epilepsyWarningAcknowledged: true, isfEnabled: true });
+    // If flicker was previously disabled via "Audio Only", restore a safe default.
+    const restoredIntensity = gamma.flickerIntensity > 0 ? gamma.flickerIntensity : 0.5;
+    setGamma({
+      epilepsyWarningAcknowledged: true,
+      isfEnabled: true,
+      flickerIntensity: restoredIntensity,
+    });
     setShowWarning(false);
   };
 

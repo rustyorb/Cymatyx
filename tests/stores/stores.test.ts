@@ -202,17 +202,19 @@ describe('useGammaStore', () => {
         epilepsyWarningAcknowledged: false,
         flickerDutyCycle: 0.5,
       },
+      lastNonZeroFlickerIntensity: 0.5,
       panelExpanded: false,
     });
   });
 
   it('initial gamma has defaults', () => {
-    const { gamma } = useGammaStore.getState();
+    const { gamma, lastNonZeroFlickerIntensity } = useGammaStore.getState();
     expect(gamma.isfEnabled).toBe(false);
     expect(gamma.clickTrainVolume).toBe(0.3);
     expect(gamma.flickerIntensity).toBe(0.5);
     expect(gamma.epilepsyWarningAcknowledged).toBe(false);
     expect(gamma.flickerDutyCycle).toBe(0.5);
+    expect(lastNonZeroFlickerIntensity).toBe(0.5);
   });
 
   it('setGamma partial merge works', () => {
@@ -225,8 +227,17 @@ describe('useGammaStore', () => {
     expect(gamma.flickerDutyCycle).toBe(0.5);
   });
 
+  it('tracks the last non-zero flicker intensity when switching to audio-only', () => {
+    useGammaStore.getState().setGamma({ flickerIntensity: 0.8 });
+    useGammaStore.getState().setGamma({ flickerIntensity: 0 });
+
+    const { gamma, lastNonZeroFlickerIntensity } = useGammaStore.getState();
+    expect(gamma.flickerIntensity).toBe(0);
+    expect(lastNonZeroFlickerIntensity).toBe(0.8);
+  });
+
   it('resetGamma restores all defaults and panelExpanded=false', () => {
-    useGammaStore.getState().setGamma({ isfEnabled: true, clickTrainVolume: 1.0 });
+    useGammaStore.getState().setGamma({ isfEnabled: true, clickTrainVolume: 1.0, flickerIntensity: 0.8 });
     useGammaStore.getState().setPanelExpanded(true);
     useGammaStore.getState().resetGamma();
     const s = useGammaStore.getState();
@@ -235,6 +246,7 @@ describe('useGammaStore', () => {
     expect(s.gamma.flickerIntensity).toBe(0.5);
     expect(s.gamma.epilepsyWarningAcknowledged).toBe(false);
     expect(s.gamma.flickerDutyCycle).toBe(0.5);
+    expect(s.lastNonZeroFlickerIntensity).toBe(0.5);
     expect(s.panelExpanded).toBe(false);
   });
 });

@@ -8,6 +8,8 @@ import type { GammaConfig } from '../types.ts';
  */
 interface GammaState {
   gamma: GammaConfig;
+  /** Last non-zero visual flicker intensity selected by the user */
+  lastNonZeroFlickerIntensity: number;
   /** Whether the gamma module panel is expanded in the UI */
   panelExpanded: boolean;
   setGamma: (gamma: Partial<GammaConfig>) => void;
@@ -26,11 +28,26 @@ const DEFAULT_GAMMA: GammaConfig = {
 
 export const useGammaStore = create<GammaState>((set) => ({
   gamma: { ...DEFAULT_GAMMA },
+  lastNonZeroFlickerIntensity: DEFAULT_GAMMA.flickerIntensity,
   panelExpanded: false,
   setGamma: (partial) =>
-    set((state) => ({ gamma: { ...state.gamma, ...partial } })),
+    set((state) => {
+      const nextGamma = { ...state.gamma, ...partial };
+      const nextLastNonZero = nextGamma.flickerIntensity > 0
+        ? nextGamma.flickerIntensity
+        : state.lastNonZeroFlickerIntensity;
+
+      return {
+        gamma: nextGamma,
+        lastNonZeroFlickerIntensity: nextLastNonZero,
+      };
+    }),
   setPanelExpanded: (expanded) => set({ panelExpanded: expanded }),
-  resetGamma: () => set({ gamma: { ...DEFAULT_GAMMA }, panelExpanded: false }),
+  resetGamma: () => set({
+    gamma: { ...DEFAULT_GAMMA },
+    lastNonZeroFlickerIntensity: DEFAULT_GAMMA.flickerIntensity,
+    panelExpanded: false,
+  }),
 }));
 
 export default useGammaStore;

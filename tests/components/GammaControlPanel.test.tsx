@@ -13,6 +13,7 @@ describe('GammaControlPanel', () => {
         epilepsyWarningAcknowledged: false,
         flickerDutyCycle: 0.5,
       },
+      lastNonZeroFlickerIntensity: 0.5,
       panelExpanded: true,
     });
   });
@@ -43,6 +44,7 @@ describe('GammaControlPanel', () => {
         epilepsyWarningAcknowledged: false,
         flickerDutyCycle: 0.5,
       },
+      lastNonZeroFlickerIntensity: 0.5,
       panelExpanded: true,
     });
 
@@ -54,5 +56,34 @@ describe('GammaControlPanel', () => {
     expect(state.isfEnabled).toBe(true);
     expect(state.epilepsyWarningAcknowledged).toBe(true);
     expect(state.flickerIntensity).toBe(0.5);
+  });
+
+  it('restores the user\'s last non-zero flicker intensity after audio-only decline', () => {
+    useGammaStore.setState({
+      gamma: {
+        isfEnabled: false,
+        clickTrainVolume: 0.3,
+        flickerIntensity: 0.8,
+        epilepsyWarningAcknowledged: false,
+        flickerDutyCycle: 0.5,
+      },
+      lastNonZeroFlickerIntensity: 0.8,
+      panelExpanded: true,
+    });
+
+    render(<GammaControlPanel />);
+
+    fireEvent.click(screen.getByRole('switch', { name: /ISF Mode toggle/i }));
+    fireEvent.click(screen.getByText(/Audio Only/i));
+    expect(useGammaStore.getState().gamma.flickerIntensity).toBe(0);
+
+    fireEvent.click(screen.getByRole('switch', { name: /ISF Mode toggle/i }));
+    fireEvent.click(screen.getByRole('switch', { name: /ISF Mode toggle/i }));
+    fireEvent.click(screen.getByText(/Enable Flicker/i));
+
+    const state = useGammaStore.getState().gamma;
+    expect(state.epilepsyWarningAcknowledged).toBe(true);
+    expect(state.isfEnabled).toBe(true);
+    expect(state.flickerIntensity).toBe(0.8);
   });
 });

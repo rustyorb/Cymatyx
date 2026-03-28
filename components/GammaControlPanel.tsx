@@ -13,7 +13,13 @@ import EpilepsyWarning from './EpilepsyWarning.tsx';
  * - Real-time status indicators
  */
 export default function GammaControlPanel() {
-  const { gamma, setGamma, panelExpanded, setPanelExpanded } = useGammaStore();
+  const {
+    gamma,
+    setGamma,
+    panelExpanded,
+    setPanelExpanded,
+    lastNonZeroFlickerIntensity,
+  } = useGammaStore();
   const [showWarning, setShowWarning] = useState(false);
 
   const handleISFToggle = () => {
@@ -26,8 +32,8 @@ export default function GammaControlPanel() {
   };
 
   const handleWarningAccept = () => {
-    // If flicker was previously disabled via "Audio Only", restore a safe default.
-    const restoredIntensity = gamma.flickerIntensity > 0 ? gamma.flickerIntensity : 0.5;
+    // If flicker was previously disabled via "Audio Only", restore last non-zero intensity.
+    const restoredIntensity = lastNonZeroFlickerIntensity > 0 ? lastNonZeroFlickerIntensity : 0.5;
     setGamma({
       epilepsyWarningAcknowledged: true,
       isfEnabled: true,

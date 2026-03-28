@@ -1,0 +1,3 @@
+feat: enhance offline fallback feedback and control
+
+Improve user feedback and granular control for offline therapeutic fallback scenarios. This includes clearer status indicators during transitions and potentially offering users more direct options for recovery or mode selection when service is interrupted.

@@ -23,7 +23,7 @@ declare global {
     __cymatyx?: { audioLevel: () => number };
   }
 }
-window.__cymatyx = { audioLevel };
+if (import.meta.env.DEV) window.__cymatyx = { audioLevel }; // dev/e2e only, never in the production bundle
 
 export default function App() {
   const [wave, setWave] = useState<number[]>([]);
@@ -33,7 +33,10 @@ export default function App() {
     orch.onFrame((f) => setWave(f.waveform));
     return () => orch.onFrame(() => {});
   }, []);
-  useEffect(() => setVideo(orch.video), [live]);
+  useEffect(() => {
+    setVideo(orch.video);
+    if (!live) setWave([]); // the scope shows a trace only while the camera is sampling
+  }, [live]);
   return (
     <>
       <header className="rack-rail px-6 py-3 flex items-baseline gap-4">

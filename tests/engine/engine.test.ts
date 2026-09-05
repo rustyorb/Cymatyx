@@ -78,12 +78,34 @@ describe('HeartbeatEngine', () => {
     expect(Math.abs(f.bpm! - 90)).toBeLessThanOrEqual(2);
   });
 
-  it('reports HRV once beats are visible and coherence once history exists', () => {
+  it('reports HRV once beats are visible and coherence once 20 s of beats exist', () => {
     const e = new HeartbeatEngine();
-    const f = feed('green', { bpm: 60, n: 600 }, e);
+    const f = feed('green', { bpm: 60, n: 750 }, e);
     expect(f.hrv).not.toBeNull();
     expect(f.hrv!).toBeLessThan(30); // synthetic beats are regular
     expect(f.coherence).not.toBeNull();
+  });
+
+  it('noise-only input never yields a BPM (SQI floor), though SQI itself is reported', () => {
+    const e = new HeartbeatEngine();
+    let f: BioFrame | null = null;
+    const rows = synthRgb({ bpm: 72, n: 400, amp: 0, noise: 30, seed: 21 });
+    for (let i = 0; i < rows.length; i++) {
+      const rgb = { r: rows[i][0], g: rows[i][1], b: rows[i][2] };
+      f = e.process({ t: (1000 * i) / 30, rois: { forehead: rgb, cheekL: rgb, cheekR: rgb } }, 'auto');
+    }
+    expect(f!.bpm).toBeNull();
+    expect(f!.confidence).toBeNull();
+    expect(f!.sqi).not.toBeNull();
+  });
+
+  it('a gap in the sample stream (face lost, tab hidden) restarts the window instead of skewing fps', () => {
+    const e = new HeartbeatEngine();
+    feed('pos', { bpm: 72 }, e);
+    const rgb = { r: 120, g: 128, b: 110 };
+    const f = e.process({ t: 10_000 + 5_000, rois: { forehead: rgb, cheekL: rgb, cheekR: rgb } }, 'pos'); // 5 s hole
+    expect(f.bpm).toBeNull();
+    expect(f.fps).toBeNull();
   });
 
   it('reset clears the window', () => {

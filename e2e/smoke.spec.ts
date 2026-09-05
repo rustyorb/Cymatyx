@@ -13,7 +13,7 @@ test('rack boots honest, START opens the loop, STOP closes it', async ({ page })
   await expect(page.getByTestId('session-state')).toHaveText(/warming|calibrating/);
   // Rules ran: the patch bay carries the goal preset, not dashes.
   await expect(page.getByText('Beat Hz').locator('..')).not.toContainText('--');
-  // Synth ran: the analyser sees real samples (master gain slews up from 0 over the first ticks).
+  // Synth ran: the analyser sees real samples (the first patch sets master gain 0.6; the worklet glides to it per block).
   await expect.poll(() => page.evaluate(() => window.__cymatyx?.audioLevel() ?? 0), { timeout: 10_000 }).toBeGreaterThan(0.01);
 
   await page.getByRole('button', { name: 'STOP' }).click();

@@ -44,6 +44,19 @@ describe('modulate', () => {
     expect(p!).toEqual({ ...GOALS.FOCUS, master_gain: 0.6 });
   });
 
+  it('HR-zone thresholds have hysteresis: a BPM hovering on the line does not flap the target', () => {
+    // engage the slow-breath mode above 88, then hover at 85: stays engaged (release is below 82)
+    let p: ParamPatch | null = null;
+    for (let i = 0; i < 20; i++) p = modulate({ bpm: 90, coherence: null, goal: 'RELAXATION' }, p);
+    expect(p!.breath_rate).toBe(GOALS.RELAXATION.breath_rate + 2);
+    for (let i = 0; i < 20; i++) p = modulate({ bpm: 85, coherence: null, goal: 'RELAXATION' }, p);
+    expect(p!.breath_rate).toBe(GOALS.RELAXATION.breath_rate + 2);
+    // and from the preset, 85 does not engage it
+    let q: ParamPatch | null = null;
+    for (let i = 0; i < 20; i++) q = modulate({ bpm: 85, coherence: null, goal: 'RELAXATION' }, q);
+    expect(q!.breath_rate).toBe(GOALS.RELAXATION.breath_rate);
+  });
+
   it('with no measurement returns the goal defaults — never null params', () => {
     const p = modulate({ bpm: null, coherence: null, goal: 'ENERGY' }, null);
     expect(p).toEqual({ ...GOALS.ENERGY, master_gain: 0.6 });

@@ -69,11 +69,10 @@ export function analyzeSpectrum(sp: SpectrumPoint[], neighborhoodBpm = 1): Spect
     }
   }
   if (total <= 1e-12 || maxPower <= 0) return { bpm: 0, sqi: 0, maxPower: 0 };
-  const half = Math.max(1, Math.round(neighborhoodBpm));
-  const lo = Math.max(0, peak - half);
-  const hi = Math.min(sp.length - 1, peak + half);
+  // points strictly within ±neighborhoodBpm of the peak (no rounding outward: 7.5 → ±7, never ±8)
+  const half = Math.max(1, neighborhoodBpm);
   let neigh = 0;
-  for (let i = lo; i <= hi; i++) neigh += sp[i].power;
+  for (let i = 0; i < sp.length; i++) if (Math.abs(sp[i].bpm - sp[peak].bpm) <= half) neigh += sp[i].power;
   let bpm = sp[peak].bpm;
   if (peak > 0 && peak < sp.length - 1) {
     const eps = 1e-20;

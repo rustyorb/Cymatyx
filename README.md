@@ -9,7 +9,7 @@
 **A closed-loop bio-resonance instrument.**
 A webcam reads your pulse off your face (rPPG), the engine turns it into **heart rate, HRV and coherence**,
 and the binaural/isochronic audio **adapts to what it measures** — every other entrainment app is open-loop.
-Nothing leaves the machine.
+No biometrics leave the machine.
 
 <br/>
 
@@ -17,7 +17,7 @@ Nothing leaves the machine.
 ![react](https://img.shields.io/badge/react-19-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![typescript](https://img.shields.io/badge/typescript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![vite](https://img.shields.io/badge/vite-7-646CFF?style=flat-square&logo=vite&logoColor=white)
-![tests](https://img.shields.io/badge/tests-62%20unit%20%C2%B7%201%20e2e%20%C2%B7%20all%20green-4f7d43?style=flat-square)
+![tests](https://img.shields.io/badge/tests-80%20unit%20%C2%B7%201%20e2e%20%C2%B7%20all%20green-4f7d43?style=flat-square)
 ![bus](https://img.shields.io/badge/bus%20signals-20%20%C2%B7%20null%20renders%20as%20--444?style=flat-square)
 ![rppg](https://img.shields.io/badge/rPPG-GREEN%20%C2%B7%20CHROM%20%C2%B7%20POS%20%C2%B7%20AUTO-b3382a?style=flat-square)
 ![cloud](https://img.shields.io/badge/biometrics%20to%20cloud-never%20by%20default-14120f?style=flat-square)
@@ -46,8 +46,9 @@ Nothing leaves the machine.
 Everything in the app is one signal path, modeled literally. The spine is a **control-voltage bus**: a
 single typed store of named signals (`bpm`, `hrv_rmssd`, `coherence`, `sqi`, `beat_hz`, `carrier_hz`,
 `breath_phase`, `cam_live`, `session_state` …), each stamped when written, each `null` until something
-real produced it. **UI components can only render bus signals** — the typed hook is the only way to read
-a value, so the honesty rule is a compile-time constraint, not a code-review hope.
+real produced it. **UI components only render bus signals** — the typed hook is the one sanctioned way to
+read a value, and the instrument tests pin the `--` behaviour, so the honesty rule is a convention the
+types and tests enforce rather than a code-review hope.
 
 ```mermaid
 flowchart LR
@@ -84,8 +85,9 @@ flowchart LR
 ## 🫀 The engine
 
 Remote photoplethysmography at 30 fps off a consumer webcam, ported from the papers and checked against
-an Apache-2.0 reference implementation (QualityPhys/CRVSE), then reviewed adversarially before the rewrite.
-What the review changed is in the table.
+an Apache-2.0 reference implementation (QualityPhys/CRVSE), reviewed adversarially before the rewrite, and
+reviewed twice more after it — once by a Claude reviewer, once by GPT-6 Astra, independently, both with
+in-memory probes rather than opinions. What the reviews changed is in the table.
 
 | | the hard part | what the engine does about it |
 |:--:|---|---|
@@ -95,7 +97,9 @@ What the review changed is in the table.
 | **4** | **Webcams do not deliver 30 fps.** | The engine measures fps **from the timestamps in its window** rather than trusting the caller. ±5 ms jitter and 5 % dropped frames stay within 1 BPM (tested). |
 | **5** | **1 BPM resolution from an 8 s window.** | Hann-windowed DFT scanned at 1-BPM steps over 45–180, then **parabolic refinement on log-power** for sub-BPM peaks. |
 | **6** | **HRV from 30 fps is quantized to ±33 ms** — larger than the RMSSD being measured. | Beats are located to **sub-sample precision** (parabola through the three samples around each maximum) and timestamps interpolated. The first run of the suite caught exactly this: "regular" synthetic beats came back with 29 ms of RMSSD that was pure sampling artifact. |
-| **7** | **Never a spurious number.** | `null` until 3 s of samples; flat input after warm-up still returns no BPM; a session with no readings records nulls, not zeros. |
+| **7** | **Lucky noise looks like a weak pulse.** Measured: pure sensor noise can score SQI 0.6 and peak prominence 7 on a single frame — a weak real pulse scores 0.45 and 5. | Single-frame quality cannot tell them apart, so the engine gates on **physics instead**: a real pulse shows the **same frequency in all three ROIs** (noise disagrees) and **holds for 2 s** (noise wandered 15–110 BPM in the measurement). SQI floor + prominence floor + ROI agreement + temporal lock; all eight noise seeds end with no BPM, every real-pulse case still reads. |
+| **8** | **"Coherence" is easy to fake.** The first metric (CV + autocorrelation of an RMSSD history) scored white noise at 64–70 and metronomic beats at 5 — a reviewer measured it. | Replaced by the **spectral tachogram** definition: a continuous **beat tracker** keeps one identity per beat across overlapping windows; the RR series is resampled to 4 Hz and the share of power within one bin of the dominant 0.03–0.4 Hz peak is the score. Measured: resonant 0.1 Hz breathing 98–100, white-noise RR 26–43. Needs 15 beats over 20 s; `--` before that. |
+| **9** | **Never a spurious number.** | `null` until 3 s of samples; a 1 s hole in the stream (face lost, tab hidden) restarts the window; a session with no readings records nulls, not zeros; too few calibration readings → RSA baseline `--`. |
 
 The whole engine is pure TypeScript with no DOM dependency, so it runs in a **Web Worker** and every
 piece has synthetic-signal tests with stated tolerances (the sub-BPM, drift, jitter, multi-ROI and SQI
@@ -142,11 +146,11 @@ A camera denial is shown on the rack in red and returns the machine to idle — 
 
 | | |
 |---|---|
-| source modules | 33 files · 1,692 lines |
+| source modules | 34 files · 1,942 lines |
 | bus signals | 20, all nullable measurements or explicit state |
 | rPPG methods · ROIs | 3 (+ AUTO) · 3 |
 | engine window | ~8 s · first reading after ~3 s |
-| unit tests | 62 across bus / engine / sensor / rules / synth / session / UI |
+| unit tests | 80 across bus / engine / sensor / rules / synth / session / UI |
 | end-to-end | 1 Playwright smoke with a fake camera: boots honest → START → camera live, state leaves idle, patch bay populated, audio non-zero → STOP → idle |
 
 ## 🧰 Run it
@@ -154,7 +158,7 @@ A camera denial is shown on the rack in red and returns the machine to idle — 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # vitest, 62 tests
+npm test           # vitest, 80 tests
 npm run test:e2e   # playwright (npx playwright install chromium first)
 npm run build      # tsc --noEmit && vite build
 ```
@@ -164,10 +168,14 @@ fetched from Google's model CDN on first START; the camera pixels never leave th
 
 > [!WARNING]
 > **What M1 is not, yet.** No coach voice, no 40 Hz gamma, no history charts, no PWA, no cloud
-> providers — by design (see milestones in the spec). The coherence score is a heuristic on the RMSSD
-> history (coefficient of variation + respiratory-lag autocorrelation), not a validated HeartMath-style
-> metric. Slew values and thresholds were tuned on synthetic signals and one face; they will move.
-> Beat detection is pulse-wave maxima from a camera, not ECG R-peaks — RMSSD here is a *camera* RMSSD.
+> providers — by design (see milestones in the spec). The coherence score is the spectral-tachogram
+> ratio described above, computed from camera-detected beats — the same *shape* as the published
+> definitions, not a validated clinical metric. Every quality gate (SQI floor, prominence, ROI agreement,
+> 2 s lock) and every slew value was set on synthetic signals; **no real face has been measured yet** —
+> they will move. Beat detection is pulse-wave maxima from a camera, not ECG R-peaks — RMSSD here is a
+> *camera* RMSSD. POS/CHROM run one projection over the whole 8 s window rather than the papers'
+> short-window overlap-add, and there is no chrominance bandpass before CHROM's alpha; motion robustness
+> is unvalidated (flagged by review, deferred until there is a face to tune on).
 
 ## 🗺 Roadmap
 

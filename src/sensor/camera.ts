@@ -9,19 +9,12 @@ export const TASKS_VISION_VERSION = '0.10.35';
 const WASM = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${TASKS_VISION_VERSION}/wasm`;
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
-// Face-shaped fallback so sampling continues (flagged 'lost') while the tracker re-acquires.
-const FALLBACK: Record<RoiName, Rect> = {
-  forehead: { x: 60, y: 20, w: 40, h: 25 },
-  cheekL: { x: 40, y: 60, w: 24, h: 18 },
-  cheekR: { x: 96, y: 60, w: 24, h: 18 },
-};
-
 export type CamStatus = 'loading' | 'ready' | 'tracking' | 'lost';
 
 export interface CameraHandle {
   stop(): void;
   readonly video: HTMLVideoElement;
-  readonly rects: Record<RoiName, Rect>;
+  readonly rects: Record<RoiName, Rect> | null;
   readonly label: string;
 }
 
@@ -32,21 +25,30 @@ export async function listCameras(): Promise<MediaDeviceInfo[]> {
 
 let landmarkerPromise: Promise<FaceLandmarker> | null = null;
 function loadLandmarker() {
-  landmarkerPromise ??= FilesetResolver.forVisionTasks(WASM).then((fileset) =>
-    FaceLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
-      runningMode: 'VIDEO',
-      numFaces: 1,
-    }),
-  );
+  landmarkerPromise ??= FilesetResolver.forVisionTasks(WASM)
+    .then((fileset) =>
+      FaceLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' },
+        runningMode: 'VIDEO',
+        numFaces: 1,
+      }),
+    )
+    .catch((e: unknown) => {
+      landmarkerPromise = null; // one offline START must not poison every later START
+      throw e;
+    });
   return landmarkerPromise;
 }
 
-/** Owns getUserMedia + the frame loop. Emits one RoiSample per video frame. */
+/**
+ * Owns getUserMedia + the frame loop. Emits one RoiSample per video frame — but ONLY while a face is
+ * tracked. No face → status 'lost' and no samples: a reading the tracker cannot vouch for is not taken.
+ */
 export async function startCamera(
   deviceId: string | null,
   onSample: (s: RoiSample) => void,
   onStatus: (s: CamStatus) => void,
+  onError?: (e: Error) => void,
 ): Promise<CameraHandle> {
   onStatus('loading');
   const landmarker = await loadLandmarker();
@@ -54,42 +56,62 @@ export async function startCamera(
   if (deviceId) video.deviceId = { exact: deviceId };
   else video.facingMode = 'user';
   const stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
-  const el = document.createElement('video');
-  el.srcObject = stream;
-  el.muted = true;
-  el.playsInline = true;
-  await el.play();
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  const release = () => {
+    stream.getTracks().forEach((t) => t.stop());
+  };
+  let el: HTMLVideoElement;
+  let ctx: CanvasRenderingContext2D;
+  try {
+    el = document.createElement('video');
+    el.srcObject = stream;
+    el.muted = true;
+    el.playsInline = true;
+    await el.play();
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  } catch (e) {
+    release(); // never leave a camera running behind a failed start
+    throw e;
+  }
   onStatus('ready');
 
-  let rects = FALLBACK;
+  let rects: Record<RoiName, Rect> | null = null;
   let raf = 0;
+  let stopped = false;
   let lastVideoTime = -1;
   const tick = () => {
-    if (el.readyState >= 2 && el.currentTime !== lastVideoTime) {
-      lastVideoTime = el.currentTime;
-      ctx.drawImage(el, 0, 0, W, H);
-      const res = landmarker.detectForVideo(el, performance.now());
-      const lm = res.faceLandmarks[0];
-      if (lm) rects = roiRects(lm, W, H);
-      onStatus(lm ? 'tracking' : 'lost');
-      const sample = (name: RoiName) => {
-        const r = rects[name];
-        return meanRgb(ctx.getImageData(r.x, r.y, r.w, r.h).data);
-      };
-      onSample({ t: performance.now(), rois: { forehead: sample('forehead'), cheekL: sample('cheekL'), cheekR: sample('cheekR') } });
+    if (stopped) return;
+    try {
+      if (el.readyState >= 2 && el.currentTime !== lastVideoTime) {
+        lastVideoTime = el.currentTime;
+        ctx.drawImage(el, 0, 0, W, H);
+        const lm = landmarker.detectForVideo(el, performance.now()).faceLandmarks[0];
+        if (lm) {
+          rects = roiRects(lm, W, H);
+          const r = rects;
+          const sample = (name: RoiName) => meanRgb(ctx.getImageData(r[name].x, r[name].y, r[name].w, r[name].h).data);
+          onStatus('tracking');
+          onSample({ t: performance.now(), rois: { forehead: sample('forehead'), cheekL: sample('cheekL'), cheekR: sample('cheekR') } });
+        } else {
+          rects = null;
+          onStatus('lost');
+        }
+      }
+    } catch (e) {
+      onError?.(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      if (!stopped) raf = requestAnimationFrame(tick);
     }
-    raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
 
   return {
     stop() {
+      stopped = true;
       cancelAnimationFrame(raf);
-      stream.getTracks().forEach((t) => t.stop());
+      release();
       el.srcObject = null;
     },
     video: el,

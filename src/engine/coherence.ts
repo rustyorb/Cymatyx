@@ -1,26 +1,39 @@
+import { powerSpectrum, analyzeSpectrum } from './spectrum';
+import type { RrPoint } from './beats';
+
+export const COHERENCE_MIN_BEATS = 15;
+export const COHERENCE_MIN_SPAN_MS = 20_000;
+const RESAMPLE_HZ = 4;
+// Tachogram band 0.033–0.4 Hz expressed in cycles/min for powerSpectrum's BPM-unit scan.
+const BAND_LO_CPM = 2;
+const BAND_HI_CPM = 24;
+
 /**
- * 0..100 from an HRV (RMSSD) history: half from a low coefficient of variation, half from
- * autocorrelation at a respiratory lag (4–8 samples). Needs 10 samples; null before that.
+ * Coherence 0..100 = share of tachogram (RR-interval) power inside one native bin of the dominant
+ * 0.03–0.4 Hz peak. Resonant, sinusoidal RR (paced breathing ~0.1 Hz) concentrates power in one bin;
+ * erratic RR spreads it. Needs ≥15 beats spanning ≥20 s; null before that. Same instrument as the
+ * pulse-band SQI, pointed at the heartbeat's own rhythm.
  */
-export function coherenceScore(hrv: number[]): number | null {
-  if (hrv.length < 10) return null;
-  const w = hrv.slice(-30);
-  const n = w.length;
-  const mean = w.reduce((a, v) => a + v, 0) / n;
-  if (mean === 0) return 0;
-  const variance = w.reduce((a, v) => a + (v - mean) ** 2, 0) / n;
-  const cv = Math.sqrt(variance) / mean;
-  const cvScore = Math.max(0, Math.min(50, (1 - cv / 0.5) * 50));
-  let best = -1;
-  for (let lag = 4; lag <= 8 && lag < n; lag++) {
-    let num = 0;
-    let cnt = 0;
-    for (let i = 0; i < n - lag; i++) {
-      num += (w[i] - mean) * (w[i + lag] - mean);
-      cnt++;
-    }
-    if (cnt && variance > 0) best = Math.max(best, num / (cnt * variance));
+export function coherenceFromRR(rr: RrPoint[]): number | null {
+  if (rr.length < COHERENCE_MIN_BEATS) return null;
+  const t0 = rr[0].t;
+  const spanMs = rr[rr.length - 1].t - t0;
+  if (spanMs < COHERENCE_MIN_SPAN_MS) return null;
+  // resample the irregular series to a uniform grid by linear interpolation
+  const n = Math.floor((spanMs / 1000) * RESAMPLE_HZ) + 1;
+  const x = new Array<number>(n);
+  let j = 0;
+  for (let i = 0; i < n; i++) {
+    const t = t0 + (i * 1000) / RESAMPLE_HZ;
+    while (j < rr.length - 2 && rr[j + 1].t < t) j++;
+    const a = rr[j];
+    const b = rr[Math.min(j + 1, rr.length - 1)];
+    const f = b.t === a.t ? 0 : Math.max(0, Math.min(1, (t - a.t) / (b.t - a.t)));
+    x[i] = a.rr + f * (b.rr - a.rr);
   }
-  const acScore = Math.max(0, Math.min(50, ((best + 0.2) * 50) / 1.2));
-  return Math.round(Math.max(0, Math.min(100, cvScore + acScore)));
+  const sp = powerSpectrum(x, RESAMPLE_HZ, BAND_LO_CPM, BAND_HI_CPM);
+  const nativeBinCpm = 60 / (spanMs / 1000);
+  const { sqi, maxPower } = analyzeSpectrum(sp, nativeBinCpm);
+  if (maxPower <= 0) return 0; // metronomic RR: no rhythm to be coherent with
+  return Math.round(100 * Math.max(0, Math.min(1, sqi)));
 }

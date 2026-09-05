@@ -13,8 +13,12 @@ export interface Synth {
   readonly running: boolean;
 }
 
-/** AudioContext + worklet node + analyser. `workletUrl` comes from `?worker&url` at the call site. */
-export function createSynth(workletUrl: string, makeContext: () => AudioContext = () => new AudioContext()): Synth {
+/**
+ * AudioContext + worklet node + analyser. `workletUrl` comes from `?worker&url` at the call site.
+ * stop() may be called while start() is still awaiting the worklet module: start() then abandons
+ * the context it was building (stop() already scheduled its close) instead of wiring a dead one.
+ */
+export function createSynth(workletUrl: string, makeContext: () => AudioContext = () => new AudioContext(), onError?: (e: Error) => void): Synth {
   let ctx: AudioContext | null = null;
   let node: AudioWorkletNode | null = null;
   let analyser: AnalyserNode | null = null;
@@ -28,13 +32,18 @@ export function createSynth(workletUrl: string, makeContext: () => AudioContext 
     },
     async start() {
       if (ctx) return;
-      ctx = makeContext();
-      await ctx.audioWorklet.addModule(workletUrl);
-      node = new AudioWorkletNode(ctx, 'cymatyx-synth', { outputChannelCount: [2] });
-      analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
-      node.connect(analyser).connect(ctx.destination);
-      if (ctx.state === 'suspended') await ctx.resume();
+      const c = makeContext();
+      ctx = c;
+      await c.audioWorklet.addModule(workletUrl);
+      if (ctx !== c) return; // stopped while the module loaded
+      const n = new AudioWorkletNode(c, 'cymatyx-synth', { outputChannelCount: [2] });
+      n.onprocessorerror = () => onError?.(new Error('Synth processor failed'));
+      const a = c.createAnalyser();
+      a.fftSize = 512;
+      n.connect(a).connect(c.destination);
+      node = n;
+      analyser = a;
+      if (c.state === 'suspended') await c.resume();
     },
     setParams(p) {
       if (!node) return;
@@ -51,7 +60,7 @@ export function createSynth(workletUrl: string, makeContext: () => AudioContext 
       analyser = null;
       setTimeout(() => {
         n?.disconnect();
-        void c?.close();
+        c?.close().catch(() => {});
       }, 600);
     },
   };

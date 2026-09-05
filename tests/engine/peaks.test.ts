@@ -26,6 +26,13 @@ describe('peaks + RMSSD', () => {
     expect(rmssd([0, 1, 2, 3], t)).toBeCloseTo(100, 9);
   });
 
+  it('an implausible interval breaks the chain instead of bridging it', () => {
+    // intervals 1000, 2000 (invalid), 1200 → no adjacent valid pair → 0, not |1200-1000| = 200
+    expect(rmssd([0, 1, 2, 3], [0, 1000, 3000, 4200])).toBe(0);
+    // intervals 1000, 1100, 2000 (invalid), 1000 → only the first pair counts → 100
+    expect(rmssd([0, 1, 2, 3, 4], [0, 1000, 2100, 4100, 5100])).toBeCloseTo(100, 9);
+  });
+
   it('needs at least 3 peaks and ignores implausible intervals', () => {
     expect(rmssd([10, 40], ts)).toBe(0);
     expect(rmssd([0, 1, 2, 3], [0, 100, 200, 300])).toBe(0); // 100 ms intervals = 600 BPM, rejected

@@ -27,6 +27,11 @@ export function detectPeaks(signal: number[], fps: number): number[] {
   return peaks;
 }
 
+/** Absolute timestamps (ms) of fractional peak indices. */
+export function peakTimes(peaks: number[], timestamps: number[]): number[] {
+  return peaks.map((p) => timeAt(p, timestamps));
+}
+
 /** Timestamp at a fractional sample index (linear between neighbours). */
 function timeAt(p: number, ts: number[]): number {
   const i0 = Math.min(ts.length - 1, Math.max(0, Math.floor(p)));
@@ -34,16 +39,26 @@ function timeAt(p: number, ts: number[]): number {
   return ts[i0] + (p - i0) * (ts[i1] - ts[i0]);
 }
 
-/** RMSSD over physiologically plausible successive intervals (333–1500 ms). Needs ≥3 peaks. */
+/**
+ * RMSSD over physiologically plausible successive intervals (333–1500 ms). Only ADJACENT valid
+ * intervals are differenced — an implausible interval breaks the chain rather than bridging it.
+ * Needs at least one adjacent valid pair (≥3 peaks).
+ */
 export function rmssd(peaks: number[], timestamps: number[]): number {
   if (peaks.length < 3) return 0;
-  const rr: number[] = [];
+  const rr: (number | null)[] = [];
   for (let i = 1; i < peaks.length; i++) {
     const d = timeAt(peaks[i], timestamps) - timeAt(peaks[i - 1], timestamps);
-    if (d >= 333 && d <= 1500) rr.push(d);
+    rr.push(d >= 333 && d <= 1500 ? d : null);
   }
-  if (rr.length < 2) return 0;
   let s = 0;
-  for (let i = 1; i < rr.length; i++) s += (rr[i] - rr[i - 1]) ** 2;
-  return Math.sqrt(s / (rr.length - 1));
+  let pairs = 0;
+  for (let i = 1; i < rr.length; i++) {
+    const a = rr[i - 1];
+    const b = rr[i];
+    if (a === null || b === null) continue;
+    s += (b - a) ** 2;
+    pairs++;
+  }
+  return pairs ? Math.sqrt(s / pairs) : 0;
 }

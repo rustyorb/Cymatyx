@@ -17,16 +17,28 @@ export interface Reading {
 
 /** Max change per tick (ticks are 500 ms): adaptive, never seasick. */
 export const SLEW: ParamPatch = { beat_hz: 0.5, carrier_hz: 5, pulse_depth: 0.05, master_gain: 0.05, breath_rate: 0.5 };
+/** HR-zone thresholds with a dead band: engage above/below the outer value, release past the inner one. */
+export const ZONES = { relaxHighEngage: 88, relaxHighRelease: 82, energyLowEngage: 57, energyLowRelease: 63 };
 const slew = (prev: number, target: number, max: number) => prev + Math.max(-max, Math.min(max, target - prev));
 
-/** Offline rule engine: goal preset → HR-zone + coherence adjustments → slewed patch. Pure. */
+/**
+ * Offline rule engine: goal preset → HR-zone + coherence adjustments → slewed patch. Pure.
+ * Zone state is read back from `prev` (is the previous patch already in the adjusted mode?), which
+ * gives the thresholds hysteresis without hidden state — a BPM hovering on a line cannot flap the audio.
+ */
 export function modulate(r: Reading, prev: ParamPatch | null): ParamPatch {
   const g = GOALS[r.goal];
   let target: ParamPatch = { ...g, master_gain: 0.6 };
   if (r.bpm !== null) {
-    // high HR under RELAXATION → slower beat, slower breath; low HR under ENERGY → push the beat up
-    if (r.goal === 'RELAXATION' && r.bpm > 85) target = { ...target, beat_hz: Math.max(4, g.beat_hz - 2), breath_rate: g.breath_rate + 2 };
-    if (r.goal === 'ENERGY' && r.bpm < 60) target = { ...target, beat_hz: g.beat_hz + 2 };
+    if (r.goal === 'RELAXATION') {
+      const engaged = !!prev && prev.breath_rate > g.breath_rate + 0.25;
+      if (r.bpm > (engaged ? ZONES.relaxHighRelease : ZONES.relaxHighEngage))
+        target = { ...target, beat_hz: Math.max(4, g.beat_hz - 2), breath_rate: g.breath_rate + 2 };
+    }
+    if (r.goal === 'ENERGY') {
+      const engaged = !!prev && prev.beat_hz > g.beat_hz + 0.25;
+      if (r.bpm < (engaged ? ZONES.energyLowRelease : ZONES.energyLowEngage)) target = { ...target, beat_hz: g.beat_hz + 2 };
+    }
   }
   if (r.coherence !== null) {
     // rising coherence deepens the pulse a little (reward), never past 0.4

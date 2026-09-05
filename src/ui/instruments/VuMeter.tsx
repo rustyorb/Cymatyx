@@ -26,7 +26,11 @@ export function VuMeter() {
         <text x="100" y="107" textAnchor="middle" fontSize="8" fontWeight="700" fill={c === null ? '#3f3b2d' : '#4f7d43'}>
           {c === null ? '--' : c}
         </text>
-        <g style={{ transform: `rotate(${angle}deg)`, transformOrigin: '100px 112px', transition: 'transform .6s cubic-bezier(.34,1.2,.64,1)' }}>
+        {/* no reading: the needle sits at rest AND reads as unpowered, so rest is never mistaken for zero coherence */}
+        <g
+          data-powered={String(c !== null)}
+          style={{ transform: `rotate(${angle}deg)`, transformOrigin: '100px 112px', transition: 'transform .6s cubic-bezier(.34,1.2,.64,1)', opacity: c === null ? 0.3 : 1 }}
+        >
           <line x1="100" y1="92" x2="100" y2="24" stroke="#1b1915" strokeWidth="1.8" strokeLinecap="round" />
           <line x1="100" y1="32" x2="100" y2="24" stroke="#b3382a" strokeWidth="2.4" strokeLinecap="round" />
         </g>

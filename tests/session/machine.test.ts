@@ -35,20 +35,43 @@ describe('session machine', () => {
     expect(state()).toBe('idle');
   });
 
-  it('records averages only from real readings taken while active', async () => {
-    const s = createSession({ now: () => 0 });
+  it('records averages only from real readings taken while active, one point per second', async () => {
+    let t = 0;
+    const s = createSession({ now: () => t });
     s.start('RELAXATION');
     s.sample({ bpm: 99, hrv: 99, coherence: 99 }); // warming: ignored
     s.warmed();
     s.calibrated(5);
+    t = 1000;
     s.sample({ bpm: 70, hrv: 40, coherence: 60 });
+    t = 1500;
+    s.sample({ bpm: 90, hrv: 90, coherence: 90 }); // same second: decimated away
+    t = 2000;
     s.sample({ bpm: 74, hrv: 44, coherence: 70 });
+    t = 3000;
     s.sample({ bpm: null, hrv: null, coherence: null });
     const rec = await s.end();
     expect(rec.avgBpm).toBe(72);
     expect(rec.avgHrv).toBe(42);
     expect(rec.peakCoherence).toBe(70);
     expect(rec.samples).toBe(2);
+  });
+
+  it('a failed save still reaches summary and reports on the rack', async () => {
+    const s = createSession({ now: () => 0 });
+    s.start('FOCUS');
+    s.warmed();
+    s.calibrated(3);
+    const add = db.sessions.add;
+    db.sessions.add = (() => Promise.reject(new Error('QuotaExceeded'))) as unknown as typeof db.sessions.add;
+    try {
+      const rec = await s.end();
+      expect(rec.id).toBeUndefined();
+      expect(state()).toBe('summary');
+      expect(bus.getState().signals.last_error).toMatch(/QuotaExceeded/);
+    } finally {
+      db.sessions.add = add;
+    }
   });
 
   it('a session with no readings records nulls, not zeros', async () => {

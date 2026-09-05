@@ -23,6 +23,32 @@
 > - Bus gained `cam_status`, `cam_device` (two webcams on the bench), `last_error`; `reset()` keeps goal/method/camera choices.
 > - Synth takes `workletUrl` from a `?worker&url` import at the App; `SubjectMonitor` owns a child-free box for the hand-mounted video (React `removeChild` crash otherwise — caught by the smoke).
 > - Smoke also asserts the synth analyser reports non-zero samples (spec §9).
+>
+> **Second wave, same day — two independent post-build reviews (Claude code-reviewer subagent; GPT-6 Astra via
+> `codex exec`), both with in-memory probes. Fixed:**
+> - **Coherence replaced.** Task 3's CV+autocorrelation-of-RMSSD metric scored white noise 64–70 and metronomic beats 5
+>   (Claude reviewer's measurement). Now: `engine/beats.ts` BeatTracker (one identity per beat across overlapping
+>   windows, 60 s tachogram) + `coherenceFromRR` (RR resampled at 4 Hz, share of power within one native bin of the
+>   dominant 0.03–0.4 Hz peak). Measured: resonant RSA 98–100, noise 26–43.
+> - **Quality gates.** Astra's probe got 63.9 BPM / 0.85 confidence from pure noise. Single-frame SQI cannot separate
+>   weak-real (0.45) from lucky noise (up to 0.6), so the engine now requires SQI ≥ 0.35 AND prominence ≥ 4 AND ≥2 of 3
+>   ROIs agreeing within 5 BPM AND a 2 s temporal lock (≥45 of 60 recent gated estimates within 8 BPM). Confidence is
+>   now a function of SQI above the floor. All constants tunable, set on synthetic signals.
+> - **Startup cancellation**: generation token in the orchestrator (END during START releases the camera it was
+>   opening); synth `start()` abandons its context if `stop()` ran during `addModule`; double STOP shares one in-flight
+>   end; camera releases the stream if `play()` rejects; rAF loop survives a throwing frame; Worker `onerror` and worklet
+>   `onprocessorerror` fail the session onto the rack; landmarker load rejection is not cached.
+> - **No face → no reading**: camera emits samples only while landmarks are tracked; status 'lost' nulls the readouts;
+>   a >1 s hole in the stream resets the engine window; a 1.5 s frame watchdog nulls stale readings.
+> - **Calibration clock** starts on entering `calibrating` (first BPM), not at START; <5 readings → RSA `null`.
+> - RMSSD differences only adjacent valid intervals; SQI neighborhood no longer rounds outward; rules have HR-zone
+>   hysteresis (engage 88 / release 82; 57 / 63); BreathingGuide keeps its phase across slewed rate changes; session
+>   moves to `summary` before persisting and reports a failed save; series decimated to 1 Hz; scope clears on STOP;
+>   VU needle reads unpowered on null; MediaPipe pinned exactly; e2e hook gated to DEV.
+> - **Deferred (documented in README warning):** POS overlap-add / CHROM chrominance bandpass, resampling instead of
+>   average-fps, summary view on the rack, 30 Hz scope re-render, worklet trig-table churn.
+> - Tests: 62 → 80 (orchestrator lifecycle ×7, beats ×4, coherence ×5 rewritten, gates, adjacency, persistence failure,
+>   hysteresis, stop-during-start).
 
 ---
 

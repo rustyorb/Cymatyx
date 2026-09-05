@@ -47,6 +47,34 @@ describe('synth graph', () => {
     expect(posted[0]).toEqual({ beat_hz: 10, carrier_hz: 200 });
   });
 
+  it('stop during start abandons the loading context instead of wiring a dead one', async () => {
+    vi.useFakeTimers();
+    const posted: unknown[] = [];
+    let release: () => void = () => {};
+    const ctx = fakeContext(posted);
+    ctx.audioWorklet.addModule = vi.fn(() => new Promise<void>((r) => (release = r)));
+    const constructed = vi.fn();
+    vi.stubGlobal(
+      'AudioWorkletNode',
+      class {
+        constructor(c: unknown) {
+          constructed(c);
+        }
+      },
+    );
+    const s = createSynth('blob:worklet', () => ctx as unknown as AudioContext);
+    const pending = s.start();
+    s.stop(); // user hit STOP while the module was loading
+    release();
+    await pending;
+    expect(constructed).not.toHaveBeenCalled();
+    expect(s.running).toBe(false);
+    expect(s.analyser).toBeNull();
+    vi.advanceTimersByTime(700);
+    expect(ctx.close).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it('stop fades the gain to 0 and closes the context later', async () => {
     vi.useFakeTimers();
     const posted: unknown[] = [];

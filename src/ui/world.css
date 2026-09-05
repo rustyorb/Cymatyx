@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+@import 'tailwindcss';
+
+/* ---- The Silver Rack. Cream panels, nixie amber, cable yellow, red mushroom. Never cyan. ---- */
+@theme {
+  --font-silk: 'Jost', 'Segoe UI', sans-serif;
+  --font-mono: 'Share Tech Mono', ui-monospace, monospace;
+  --color-case: #1b1916;
+  --color-rail: #2c2822;
+  --color-panel: #d9d2c0;
+  --color-panel-deep: #c4bca8;
+  --color-panel-edge: #9a927d;
+  --color-ink: #211f1a;
+  --color-ink-soft: #3f3b2d;
+  --color-glass: #221e15;
+  --color-nixie: #ffb648;
+  --color-nixie-dim: #bd9350;
+  --color-red: #b3382a;
+  --color-cable: #d4a700;
+  --color-ok: #4f7d43;
+  --color-tape: #14120f;
+}
+
+body {
+  background: var(--color-case);
+  color: var(--color-ink);
+  margin: 0;
+  font-family: var(--font-silk);
+  -webkit-font-smoothing: antialiased;
+}
+
+.rack-rail {
+  background: linear-gradient(180deg, #34302a, #241f1a);
+  border-bottom: 1px solid #0d0b09;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--color-panel);
+}
+
+.module {
+  position: relative;
+  border-radius: 5px;
+  border: 1px solid var(--color-panel-edge);
+  background:
+    radial-gradient(rgba(70, 64, 48, 0.06) 1px, transparent 1.2px) 0 0/5px 5px,
+    linear-gradient(180deg, #e0d9c7, #d3ccb9 55%, #c6bfab);
+  padding: 1.1rem 1rem 1rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 8px 18px rgba(0, 0, 0, 0.5);
+}
+.module::before,
+.module::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #d6d1c1 0 1.5px, #8c8571 2.5px, #55503f 3.5px);
+}
+.module::before {
+  left: 8px;
+}
+.module::after {
+  right: 8px;
+}
+
+.tape {
+  display: inline-block;
+  font: 600 10px/1 var(--font-silk);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--color-tape);
+  padding: 0.3rem 0.65rem 0.25rem;
+  border-radius: 2px;
+}
+.label {
+  font: 500 9px/1.3 var(--font-silk);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+.glass {
+  background: var(--color-glass);
+  border: 1px solid #16120d;
+  border-radius: 4px;
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.75);
+  color: var(--color-nixie);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.nixie {
+  font: 400 56px/1 var(--font-mono);
+  color: var(--color-nixie);
+  text-shadow:
+    0 0 6px rgba(255, 182, 72, 0.8),
+    0 0 18px rgba(255, 120, 30, 0.5);
+}
+.nixie-off {
+  color: #4a3b22;
+  text-shadow: none;
+}
+
+.led {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    0 0 6px currentColor;
+}
+.led-off {
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: none;
+}
+
+.btn-round {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  font: 600 10px/1.2 var(--font-silk);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: radial-gradient(circle at 40% 35%, #f3ecd8, #cfc5ad 70%, #a89f88);
+  border: 3px solid #8c8471;
+  box-shadow:
+    0 4px 0 #6f6858,
+    0 8px 14px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+  cursor: pointer;
+}
+.btn-round:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+.btn-round[aria-pressed='true'] {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #6f6858,
+    inset 0 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(255, 182, 72, 0.45);
+  background: radial-gradient(circle at 40% 35%, #fff2c9, #ffd27a 70%, #d9a441);
+}
+
+.mushroom {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  font: 700 12px/1 var(--font-silk);
+  letter-spacing: 0.3em;
+  color: #fff;
+  background: radial-gradient(circle at 40% 30%, #e0584a, #b3382a 60%, #7c2015);
+  border: 6px solid #55503f;
+  box-shadow:
+    0 8px 0 #4a1a12,
+    0 14px 22px rgba(0, 0, 0, 0.55);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+  cursor: pointer;
+}
+.mushroom:active {
+  transform: translateY(6px);
+  box-shadow:
+    0 2px 0 #4a1a12,
+    0 6px 12px rgba(0, 0, 0, 0.55);
+}
+.mushroom.stop {
+  background: radial-gradient(circle at 40% 30%, #6d675a, #3f3b2d 60%, #24211a);
+  box-shadow:
+    0 8px 0 #14120f,
+    0 14px 22px rgba(0, 0, 0, 0.55);
+}
+
+.jack-select {
+  background: var(--color-glass);
+  color: var(--color-nixie);
+  font: 12px/1.2 var(--font-mono);
+  border: 1px solid #16120d;
+  border-radius: 3px;
+  padding: 0.4rem 0.5rem;
+  width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-red);
+  outline-offset: 2px;
+}
+::selection {
+  background: var(--color-cable);
+  color: var(--color-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

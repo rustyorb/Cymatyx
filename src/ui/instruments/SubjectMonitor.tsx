@@ -4,6 +4,8 @@ import { useSignal } from '../../bus/useSignal';
 
 /** The camera is never invisible: whenever it samples, it is on the rack, with its tally lit. */
 export function SubjectMonitor({ video }: { video: HTMLVideoElement | null }) {
+  // The video element is owned by the camera module and mounted by hand, so this box must have NO
+  // React children of its own (mixing the two makes React's removeChild explode).
   const box = useRef<HTMLDivElement>(null);
   const live = useSignal('cam_live');
   useEffect(() => {
@@ -21,8 +23,13 @@ export function SubjectMonitor({ video }: { video: HTMLVideoElement | null }) {
         <span className="tape">Subject</span>
         <TallyLamp />
       </div>
-      <div ref={box} className="glass aspect-4/3 overflow-hidden flex items-center justify-center">
-        {!live && <span className="label" style={{ color: 'var(--color-nixie-dim)' }}>no signal</span>}
+      <div className="glass aspect-4/3 overflow-hidden relative">
+        <div ref={box} className="absolute inset-0" />
+        {!live && (
+          <span className="absolute inset-0 flex items-center justify-center label" style={{ color: 'var(--color-nixie-dim)' }}>
+            no signal
+          </span>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,8 @@ import { createEngineClient, type EngineClient } from '../engine/client';
 import { startCamera, type CameraHandle } from '../sensor/camera';
 import { createSynth } from '../synth/graph';
 import { modulate, type ParamPatch } from '../rules/modulate';
+import { createCoach } from '../voice/coach';
+import { probeTts, probeBrain } from '../voice/probe';
 import { createSession } from './machine';
 import type { BioFrame } from '../engine/types';
 
@@ -22,6 +24,8 @@ const NO_READING = { bpm: null, hrv_rmssd: null, coherence: null, sqi: null, con
 export function createOrchestrator(workletUrl: string) {
   const session = createSession();
   const synth = createSynth(workletUrl, undefined, (e) => fail(e));
+  const coach = createCoach();
+  const DUCK = 0.35; // synth gain multiplier while the coach speaks
   let engine: EngineClient | null = null;
   let cam: CameraHandle | null = null;
   let prev: ParamPatch | null = null;
@@ -86,6 +90,9 @@ export function createOrchestrator(workletUrl: string) {
       cam = handle;
       lastFrameAt = Date.now();
       bus.getState().set('cam_live', true);
+      void probeTts(); // lamps light only if the servers answer
+      void probeBrain();
+      coach.start();
     } catch (e) {
       if (my !== gen) return;
       await teardown();
@@ -102,14 +109,17 @@ export function createOrchestrator(workletUrl: string) {
       if (s.cam_live && s.bpm !== null && Date.now() - lastFrameAt > STALE_MS) bus.getState().patch({ ...NO_READING });
       if (s.session_state !== 'active' && s.session_state !== 'calibrating') return;
       prev = modulate({ bpm: s.bpm, coherence: s.coherence, goal: s.goal }, prev);
-      bus.getState().patch(prev);
-      synth.setParams(prev);
+      // ducking: the bus carries what the synth is actually told, so the patch bay shows the ducked gain
+      const out = { ...prev, master_gain: s.coach_speaking ? prev.master_gain * DUCK : prev.master_gain };
+      bus.getState().patch(out);
+      synth.setParams(out);
     }, TICK_MS);
   }
 
   async function teardown() {
     clearInterval(tick);
     clearTimeout(calTimer);
+    coach.stop(); // stops listening; a line already playing finishes
     cam?.stop();
     cam = null;
     engine?.terminate();
@@ -126,8 +136,10 @@ export function createOrchestrator(workletUrl: string) {
     ending = (async () => {
       const wasActive = bus.getState().signals.session_state === 'active';
       await teardown();
-      if (wasActive) await session.end();
-      else session.abort();
+      if (wasActive) {
+        const rec = await session.end();
+        void coach.sessionEnd(rec); // spoken from the record's numbers, after the live bus went dark
+      } else session.abort();
     })().finally(() => {
       ending = null;
     });

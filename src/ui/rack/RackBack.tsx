@@ -1,6 +1,9 @@
 import { bus } from '../../bus/store';
 import { useSignal, fmt } from '../../bus/useSignal';
 import { CameraSelect } from '../instruments/CameraSelect';
+import { VoiceJack } from '../instruments/VoiceJack';
+import { BrainJack } from '../instruments/BrainJack';
+import { CoachModule } from '../instruments/CoachModule';
 import type { BusSignals, RppgMethod } from '../../bus/types';
 
 type NumericKey = { [K in keyof BusSignals]: BusSignals[K] extends number | null ? K : never }[keyof BusSignals];
@@ -54,6 +57,11 @@ export function RackBack() {
           </span>
           <div className="glass px-3 py-2 text-lg">{conf === null ? '--' : `${Math.round(conf * 100)}%`}</div>
         </div>
+      </div>
+      <div className="grid md:grid-cols-3 gap-4 pt-2">
+        <VoiceJack />
+        <BrainJack />
+        <CoachModule />
       </div>
     </section>
   );

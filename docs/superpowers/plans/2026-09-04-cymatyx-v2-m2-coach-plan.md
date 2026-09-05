@@ -10,6 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-04-cymatyx-v2-m2-coach-design.md`
 
+> **Executed 2026-09-04 (inline, all 7 tasks) — deltas from the listings below:** `brain.ts` strips quotes *after*
+> taking the first line (order bug caught by its test); the coach tracks `startedAt` as `number | null` so a session
+> that starts at t = 0 still counts minutes; the orchestrator unit test mocks `voice/probe` to stay off the network;
+> `jack.tsx` exports a shared `smallButton` style. 100 unit tests + 2 Playwright smokes green; tsc + build clean.
+> Not yet exercised against a real Kokoro/Ollama server in this session (both were down while Kyle worked) — the
+> mock providers prove the plumbing, the Test buttons on the jacks prove the real ones.
+
 ---
 
 ## File structure

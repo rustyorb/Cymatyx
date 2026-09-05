@@ -13,17 +13,17 @@ No biometrics leave the machine.
 
 <br/>
 
-![status](https://img.shields.io/badge/status-v2%20M1%20%C2%B7%20the%20pure%20loop-ffb648?style=flat-square)
+![status](https://img.shields.io/badge/status-v2%20M2%20%C2%B7%20the%20coach-ffb648?style=flat-square)
 ![react](https://img.shields.io/badge/react-19-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![typescript](https://img.shields.io/badge/typescript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![vite](https://img.shields.io/badge/vite-7-646CFF?style=flat-square&logo=vite&logoColor=white)
-![tests](https://img.shields.io/badge/tests-80%20unit%20%C2%B7%201%20e2e%20%C2%B7%20all%20green-4f7d43?style=flat-square)
+![tests](https://img.shields.io/badge/tests-100%20unit%20%C2%B7%202%20e2e%20%C2%B7%20all%20green-4f7d43?style=flat-square)
 ![bus](https://img.shields.io/badge/bus%20signals-20%20%C2%B7%20null%20renders%20as%20--444?style=flat-square)
 ![rppg](https://img.shields.io/badge/rPPG-GREEN%20%C2%B7%20CHROM%20%C2%B7%20POS%20%C2%B7%20AUTO-b3382a?style=flat-square)
 ![cloud](https://img.shields.io/badge/biometrics%20to%20cloud-never%20by%20default-14120f?style=flat-square)
 ![cyan](https://img.shields.io/badge/cyan-banned-14120f?style=flat-square)
 
-**[Design spec →](docs/superpowers/specs/2026-09-04-cymatyx-v2-design.md)** · **[M1 plan →](docs/superpowers/plans/2026-09-04-cymatyx-v2-m1-plan.md)** · **[Product truth →](PRODUCT.md)** · **[Run it →](#-run-it)**
+**[Design spec →](docs/superpowers/specs/2026-09-04-cymatyx-v2-design.md)** · **[M1 plan →](docs/superpowers/plans/2026-09-04-cymatyx-v2-m1-plan.md)** · **[M2 coach spec →](docs/superpowers/specs/2026-09-04-cymatyx-v2-m2-coach-design.md)** · **[Product truth →](PRODUCT.md)** · **[Run it →](#-run-it)**
 
 </div>
 
@@ -135,6 +135,30 @@ wired to a bus signal, and there is no imaginary hardware (no "brain mapping" pa
 - **Patch bay** (back of the rack, M1 minimal) — the live rules→synth patch (beat, carrier, pulse depth,
   master, breath), rPPG method select, camera input select, engine confidence.
 
+## 🗣 The coach
+
+The generative half, built the same way as the loop: **a listener on the bus**, never a modulator. It
+speaks only about numbers the bus actually holds, through hardware that is local, and every setting is a
+jack on the back of the rack. There is no settings page.
+
+- **Voice jack** — one OpenAI-compatible `/v1/audio/speech` server. Kokoro-FastAPI is the proven amp
+  (local, GPU, 60+ voices); OmniVoice joins once it has a shim. Models and voices are **fetched from the
+  server**, never typed. Test button speaks a fixed line; the lamp lights only because the server answered.
+- **Brain jack** — `OFF` / `FIXED LINES` / `LLM`. In LLM mode any OpenAI-compatible `/v1/chat/completions`
+  server (Ollama, LM Studio), models fetched from it. The prompt states the rules: one sentence, only the
+  numbers in the moment, no medical claims, tone by coherence band.
+- **The honesty validator** — every LLM line is checked before it is spoken: ≤ 30 words, no banned claims,
+  and **every digit in it must be a number from the moment**. A line that invents a heart rate is replaced
+  by the fixed-line template. Every event × band template passes the same validator (tested).
+- **Events** — calibration begins, first pulse lock, session active, coherence band change (with hysteresis),
+  a check-in every 90 s, session end (spoken from the saved record, not the now-dark bus). At least 40 s
+  between lines; nothing interrupts a line in progress; the synth ducks to 35 % while the coach speaks and the
+  patch bay shows the ducked gain, because the bus carries what the synth was actually told.
+- **The strip** on the front: a mute latch and *exactly* the last line spoken. TTS down? The line still shows
+  and the voice lamp goes red with the reason under the jack.
+- **Dev-only fake providers** under `/mock/v1` (a 0.3 s WAV and a one-line "brain") make the browser smoke
+  deterministic: START lights both jacks, the voice jack Test plays, the brain jack Fetch/Test composes.
+
 ## 🗓 Sessions
 
 `idle → warming → calibrating → active → summary`. Warming ends at the first real BPM. Calibration is 30 s
@@ -146,11 +170,11 @@ A camera denial is shown on the rack in red and returns the machine to idle — 
 
 | | |
 |---|---|
-| source modules | 34 files · 1,942 lines |
+| source modules | 46 files · 2,745 lines |
 | bus signals | 20, all nullable measurements or explicit state |
 | rPPG methods · ROIs | 3 (+ AUTO) · 3 |
 | engine window | ~8 s · first reading after ~3 s |
-| unit tests | 80 across bus / engine / sensor / rules / synth / session / UI |
+| unit tests | 100 across bus / engine / sensor / rules / synth / session / voice / UI |
 | end-to-end | 1 Playwright smoke with a fake camera: boots honest → START → camera live, state leaves idle, patch bay populated, audio non-zero → STOP → idle |
 
 ## 🧰 Run it
@@ -158,7 +182,7 @@ A camera denial is shown on the rack in red and returns the machine to idle — 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # vitest, 80 tests
+npm test           # vitest, 100 tests
 npm run test:e2e   # playwright (npx playwright install chromium first)
 npm run build      # tsc --noEmit && vite build
 ```
@@ -167,7 +191,7 @@ Chrome/Edge recommended (MediaPipe GPU delegate, AudioWorklet). The face-landmar
 fetched from Google's model CDN on first START; the camera pixels never leave the page.
 
 > [!WARNING]
-> **What M1 is not, yet.** No coach voice, no 40 Hz gamma, no history charts, no PWA, no cloud
+> **What is not here yet.** No 40 Hz gamma, no history charts, no two-way voice, no PWA, no cloud
 > providers — by design (see milestones in the spec). The coherence score is the spectral-tachogram
 > ratio described above, computed from camera-detected beats — the same *shape* as the published
 > definitions, not a validated clinical metric. Every quality gate (SQI floor, prominence, ROI agreement,
@@ -181,9 +205,9 @@ fetched from Google's model CDN on first START; the camera pixels never leave th
 
 | milestone | what works end-to-end | status |
 |---|---|---|
-| **M1 — the pure loop** | camera → rPPG → HR/HRV/coherence → rules → adaptive audio + breathing guide, one rack, session saved locally | **shipped** (this) |
-| **M2 — the coach** | spoken lines from a local LLM (or fixed lines) through one local TTS jack (Kokoro proven; OmniVoice via shim); tone reacts to coherence | next |
-| **M3 — 40 Hz gamma** | click train + flicker behind a blocking photosensitive-epilepsy gate; audio-only alternative | later |
+| **M1 — the pure loop** | camera → rPPG → HR/HRV/coherence → rules → adaptive audio + breathing guide, one rack, session saved locally | **shipped** |
+| **M2 — the coach** | spoken lines from a local LLM (or fixed lines) through one local TTS jack (Kokoro proven; OmniVoice via shim); tone reacts to coherence | **shipped** (this) |
+| **M3 — 40 Hz gamma** | click train + flicker behind a blocking photosensitive-epilepsy gate; audio-only alternative | next |
 | later | history/trends, rack flip (full back-of-rack patch view), local STT, Elata bio-sdk eval, cymatyx.com | |
 
 ## 🗂 Layout

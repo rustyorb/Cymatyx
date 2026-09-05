@@ -5,6 +5,7 @@ import { PowerSwitch } from '../instruments/PowerSwitch';
 import { BreathingGuide } from '../instruments/BreathingGuide';
 import { Scope } from '../instruments/Scope';
 import { SubjectMonitor } from '../instruments/SubjectMonitor';
+import { CoachStrip } from '../instruments/CoachStrip';
 import { useSignal, fmt } from '../../bus/useSignal';
 
 export interface RackProps {
@@ -42,6 +43,7 @@ export function Rack({ waveform, video, onStart, onEnd }: RackProps) {
         <div className="label" data-testid="session-state">
           {state}
         </div>
+        <CoachStrip />
         {err && (
           <div className="label" style={{ color: 'var(--color-red)' }} role="alert">
             {err}

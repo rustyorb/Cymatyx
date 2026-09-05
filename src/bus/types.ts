@@ -29,6 +29,12 @@ export interface BusSignals {
   goal: Goal;
   method_select: RppgMethod;
   last_error: string | null; // e.g. camera denied — shown on the rack, cleared on the next start
+  // coach (M2)
+  coach_enabled: boolean; // front latch; persists across resets
+  coach_speaking: boolean;
+  coach_last_line: string | null; // exactly what was spoken (or would have been, TTS off)
+  tts_status: 'off' | 'ok' | 'error';
+  brain_status: 'off' | 'ok' | 'error';
 }
 
 export const INITIAL_SIGNALS: BusSignals = {
@@ -52,7 +58,12 @@ export const INITIAL_SIGNALS: BusSignals = {
   goal: 'RELAXATION',
   method_select: 'auto',
   last_error: null,
+  coach_enabled: true,
+  coach_speaking: false,
+  coach_last_line: null,
+  tts_status: 'off',
+  brain_status: 'off',
 };
 
 /** Signals that survive a session reset (user choices, not measurements). */
-export const PERSISTENT: (keyof BusSignals)[] = ['goal', 'method_select', 'cam_device'];
+export const PERSISTENT: (keyof BusSignals)[] = ['goal', 'method_select', 'cam_device', 'coach_enabled'];

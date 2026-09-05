@@ -28,6 +28,8 @@ vi.mock('../../src/engine/client', () => ({
     return { push: eng.push, reset: eng.reset, terminate: eng.terminate };
   },
 }));
+// the jacks are probed on START; keep the unit test off the network
+vi.mock('../../src/voice/probe', () => ({ probeTts: async () => null, probeBrain: async () => null }));
 const syn = vi.hoisted(() => ({ start: vi.fn(async () => {}), stop: vi.fn(), setParams: vi.fn() }));
 vi.mock('../../src/synth/graph', () => ({
   createSynth: () => ({ start: syn.start, stop: syn.stop, setParams: syn.setParams, analyser: null, running: false }),

@@ -1,0 +1,64 @@
+<svg width="1200" height="280" viewBox="0 0 1200 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cymatyx — a webcam reads your heart; the sound adapts to it">
+  <!-- Cymatyx v2 banner. Self-contained on purpose: GitHub's camo proxy strips external refs. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1916"/>
+      <stop offset="0.55" stop-color="#221e15"/>
+      <stop offset="1" stop-color="#14120f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.35" r="0.6">
+      <stop offset="0" stop-color="#ffb648" stop-opacity="0.28"/>
+      <stop offset="0.5" stop-color="#ffb648" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ffb648" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffb648" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ffb648" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffb648" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e0d9c7"/>
+      <stop offset="1" stop-color="#c6bfab"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="280" fill="url(#bg)"/>
+  <rect width="1200" height="280" fill="url(#grid)"/>
+  <rect width="1200" height="280" fill="url(#glow)"/>
+
+  <!-- corner ticks -->
+  <path d="M 24 40 L 24 24 L 40 24" fill="none" stroke="#ffb648" stroke-opacity="0.7" stroke-width="2"/>
+  <path d="M 1176 240 L 1176 256 L 1160 256" fill="none" stroke="#ffb648" stroke-opacity="0.7" stroke-width="2"/>
+
+  <!-- the rack: a cream module with a nixie readout and a red mushroom -->
+  <g transform="translate(860 44)">
+    <rect x="0" y="0" width="300" height="192" rx="6" fill="url(#panel)" stroke="#9a927d"/>
+    <circle cx="10" cy="10" r="3.5" fill="#8c8571"/><circle cx="290" cy="10" r="3.5" fill="#8c8571"/>
+    <circle cx="10" cy="182" r="3.5" fill="#8c8571"/><circle cx="290" cy="182" r="3.5" fill="#8c8571"/>
+    <rect x="22" y="18" width="118" height="16" rx="2" fill="#14120f"/>
+    <text x="81" y="30" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="2.5" fill="#ffffff" text-anchor="middle">BIO-TELEMETRY</text>
+    <rect x="22" y="46" width="176" height="92" rx="4" fill="#221e15" stroke="#16120d"/>
+    <text x="110" y="112" font-family="Consolas, 'Courier New', monospace" font-size="62" fill="#ffb648" text-anchor="middle" style="text-shadow:0 0 8px #ffb648">72</text>
+    <text x="110" y="128" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="8" letter-spacing="2" fill="#bd9350" text-anchor="middle">HEART RATE · BPM</text>
+    <circle cx="246" cy="92" r="34" fill="#55503f"/>
+    <circle cx="246" cy="92" r="28" fill="#b3382a"/>
+    <circle cx="238" cy="82" r="12" fill="#e0584a" opacity="0.55"/>
+    <text x="246" y="96" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="#ffffff" text-anchor="middle">START</text>
+    <!-- coiled cable from the readout to the button -->
+    <path d="M 198 100 C 210 100, 208 128, 220 128 C 232 128, 230 100, 242 100" fill="none" stroke="#d4a700" stroke-width="3" stroke-linecap="round"/>
+    <text x="150" y="172" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="8" letter-spacing="2" fill="#3f3b2d" text-anchor="middle">ENGINE POS · SQI 81%</text>
+  </g>
+
+  <!-- pulse trace across the bottom -->
+  <path d="M 40 246 L 250 246 L 262 246 L 270 222 L 278 262 L 286 210 L 296 268 L 306 246 L 330 246 L 560 246 L 572 246 L 580 222 L 588 262 L 596 210 L 606 268 L 616 246 L 640 246 L 840 246"
+        fill="none" stroke="#ffb648" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+
+  <!-- title + tagline -->
+  <text x="80" y="128" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="64" font-weight="800" fill="#f2ecdd" letter-spacing="6">CYMATYX</text>
+  <rect x="82" y="148" width="420" height="3" fill="url(#rule)"/>
+  <text x="80" y="188" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="23" fill="#d9d2c0">A webcam reads your heart. The sound adapts to it.</text>
+  <text x="80" y="216" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="16" fill="#bd9350">closed-loop bio-resonance · local-first · v2, rebuilt from scratch</text>
+</svg>

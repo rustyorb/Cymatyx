@@ -10,6 +10,20 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-04-cymatyx-v2-design.md`
 
+> **Executed 2026-09-04 (inline, all tasks; actual versions: Vite 7.3, Vitest 3.2).** The shipped code differs from the
+> task listings below in these deliberate ways, driven by the adversarial engine review (Codex/Astra lane, relayed by a
+> Sonnet subagent) and by the first test run:
+> - **SQI neighborhood = one native FFT bin (60·fps/N BPM)**, not ±1 scanned BPM — `analyzeSpectrum(sp, neighborhoodBpm)`.
+> - **fps measured from window timestamps** (`HeartbeatEngine.fps`); `process(sample, method)` takes no fps arg; the worker protocol drops it.
+> - **Window 240 / MIN 90** (~8 s / ~3 s) instead of 150 / 60; trig tables cached per (n, fps).
+> - **AUTO hysteresis** (incumbent keeps the method unless a rival's SQI is 15 % better) and **ROI rejection** (below half the best ROI's SQI).
+> - **Sub-sample peak timing** (parabolic) in `detectPeaks` → fractional indices; `rmssd` interpolates timestamps. The first run showed 29 ms of pure quantization RMSSD on regular synthetic beats.
+> - Synthetic RGB model is **multiplicative** (`mean·(1+a·pulse)·(1+D·drift)`), the physics CHROM/POS assume; candidate tests compare spectral peaks, not std ratios.
+> - `RoiSample.rois` is required for all three ROIs (camera always supplies them, fallback rects when the face is lost).
+> - Bus gained `cam_status`, `cam_device` (two webcams on the bench), `last_error`; `reset()` keeps goal/method/camera choices.
+> - Synth takes `workletUrl` from a `?worker&url` import at the App; `SubjectMonitor` owns a child-free box for the hand-mounted video (React `removeChild` crash otherwise — caught by the smoke).
+> - Smoke also asserts the synth analyser reports non-zero samples (spec §9).
+
 ---
 
 ## File structure
